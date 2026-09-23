@@ -1,0 +1,96 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Bakım Tanımı V5.3.6</title><link rel="stylesheet" href="style.css"></head><body>
+<header class="topbar"><img src="AKGLOG.png"><div class="title"><strong>Haftalık Bakım CMMS</strong><small>V5.3.6 Makine Bazlı Bakım Grupları</small></div><button class="ghost" onclick="location.href='index.html'">Ana Sayfa</button></header>
+<main class="page active"><section class="card"><h1>Yeni Haftalık Bakım Hazırla</h1><p class="muted">Referans resmi zorunludur. Operatör bu resme bakarak bakım noktasını bulacaktır.</p></section>
+<form id="form" class="card form-grid"><input id="editingTemplateId" type="hidden"><label class="full">Makine Seç<select id="machineSelect" required><option value="">Makine listesi yükleniyor...</option></select></label><label>Makine ID<input id="machineId" class="readonly" readonly></label><label>Makine Adı<input id="machineName" class="readonly" readonly></label><label class="full">Maliyet Merkezi<input id="costCenter" class="readonly" readonly></label><label>Makine Bölgesi<input id="region" required></label><label>Makine Sistemi<input id="system" required></label><label>Kullanılacak Parça<input id="part"></label><label>İstenen Değer<input id="targetValue"></label><label class="full">Yapılacak Bakım<textarea id="task" required></textarea></label><label>Sıra No<input id="orderNo" type="number" min="1" value="1"></label><label class="check"><input id="photoRequired" type="checkbox"> Bakım sonrası kanıt fotoğrafı zorunlu</label><label class="full">Referans Resim Seç <b>*</b><input id="referenceFile" type="file" accept="image/*" required></label><div class="full"><img id="preview" class="preview hidden" alt="Referans resim önizleme"></div><input id="active" type="checkbox" checked class="hidden"><div class="full actions"><button id="saveBtn" class="primary">Resmi Yükle ve Bakımı Kaydet</button><button id="cancelEditBtn" class="secondary hidden" type="button">Düzenlemeyi İptal Et</button><button id="testBtn" class="secondary" type="button">Bağlantıyı Test Et</button></div><div id="msg" class="message full"></div></form>
+<section class="card"><div class="maintenance-list-head"><div><h2>Kayıtlı Bakımlar</h2><p class="muted">Bakımlar makine adına göre gruplanır. Makine başlığına basarak bakım maddelerini açıp kapatabilirsiniz.</p></div><button id="refreshBtn" class="secondary compact-btn" type="button">Listeyi Yenile</button></div><div id="machineGroups" class="machine-groups"><div class="empty-state">Bakım listesi yükleniyor...</div></div></section><details class="card"><summary>Bağlantı ayrıntıları</summary><pre id="debug"></pre></details>
+<iframe name="uploadFrame" id="uploadFrame" class="hidden"></iframe><form id="uploadForm" target="uploadFrame" method="post" class="hidden"><input name="action" value="createMaintenanceTemplateWithImage"><input name="payload" id="uploadPayload"><input name="imageBase64" id="uploadBase64"><input name="imageName" id="uploadName"><input name="imageType" id="uploadType"></form></main>
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbwjECihD-JQg6ITpewj4ga3HzMraB4sUNhrCf40l6Fjlf2EOhIY9oMknFHAnG_XTCPP/exec',$=id=>document.getElementById(id);let machines=[];let pendingSave=null;let savePollTimer=null;let savePollCount=0;
+function jp(action,p={}){return new Promise((ok,no)=>{const cb='v53_'+Date.now()+Math.floor(Math.random()*9999),s=document.createElement('script');let d=false,c=()=>{delete window[cb];s.remove()},t=setTimeout(()=>{if(!d){d=true;c();no(Error('Bağlantı zaman aşımı'))}},15000);window[cb]=r=>{if(!d){d=true;clearTimeout(t);c();ok(r)}};s.onerror=()=>{if(!d){d=true;clearTimeout(t);c();no(Error('Bağlantı kurulamadı'))}};s.src=API_URL+'?'+new URLSearchParams({action,callback:cb,_:Date.now(),...p});document.head.appendChild(s)})}
+function msg(t,c=''){$('msg').textContent=t;$('msg').className='message '+c}function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function loadMachines(){try{const r=await jp('listMachines');if(!r.success)throw Error(r.message);machines=r.machines;$('machineSelect').innerHTML='<option value="">Makine seçiniz</option>'+machines.map(x=>`<option value="${esc(x.id)}">${esc(x.machineName)} | ${esc(x.costCenter)}</option>`).join('');msg(r.count+' makine yüklendi.','success')}catch(e){msg(e.message,'error')}}
+function selectMachine(){
+  const m=machines.find(x=>x.id===$('machineSelect').value);
+  $('machineId').value=m?.id||'';
+  $('machineName').value=m?.machineName||'';
+  $('costCenter').value=m?.costCenter||'';
+
+  // Makine değiştiğinde önceki makinenin bakım bilgilerini temizle.
+  $('region').value='';
+  $('system').value='';
+  $('part').value='';
+  $('targetValue').value='';
+  $('task').value='';
+  $('orderNo').value='1';
+  $('photoRequired').checked=false;
+  $('referenceFile').value='';
+  $('preview').removeAttribute('src');
+  $('preview').classList.add('hidden');
+
+  if(m){
+    msg('Makine değiştirildi. Bakım formu temizlendi.','success');
+  }else{
+    msg('Makine seçimi kaldırıldı. Form temizlendi.');
+  }
+}
+function data(){return{machineId:$('machineId').value,region:$('region').value.trim(),system:$('system').value.trim(),part:$('part').value.trim(),task:$('task').value.trim(),targetValue:$('targetValue').value.trim(),orderNo:Number($('orderNo').value||1),photoRequired:$('photoRequired').checked,active:true}}
+function compress(file){return new Promise((ok,no)=>{const img=new Image(),reader=new FileReader();reader.onload=e=>img.src=e.target.result;reader.onerror=no;img.onload=()=>{const max=1400,scale=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);c.getContext('2d').drawImage(img,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.78).split(',')[1])};reader.readAsDataURL(file)})}
+function finishSaveSuccess(record){if(!pendingSave)return;clearInterval(savePollTimer);savePollTimer=null;$('saveBtn').disabled=false;$('saveBtn').textContent='Resmi Yükle ve Bakımı Kaydet';msg('✅ Referans resimli bakım kaydedildi'+(record&&record.templateId?' - '+record.templateId:''),'success');$('debug').textContent=JSON.stringify({success:true,record:record||null},null,2);$('task').value='';$('part').value='';$('targetValue').value='';$('referenceFile').value='';$('preview').classList.add('hidden');pendingSave=null;list()}
+function finishSaveError(text){clearInterval(savePollTimer);savePollTimer=null;$('saveBtn').disabled=false;$('saveBtn').textContent='Resmi Yükle ve Bakımı Kaydet';msg(text,'error');pendingSave=null}
+async function verifySavedRecord(){if(!pendingSave)return;try{const r=await jp('listMaintenanceTemplates',{machineId:pendingSave.machineId});if(!r.success)return;const found=r.templates.find(x=>x.task===pendingSave.task&&x.region===pendingSave.region&&x.system===pendingSave.system&&x.referenceImageUrl);if(found)finishSaveSuccess(found)}catch(error){$('debug').textContent=JSON.stringify({pollError:error.message},null,2)}}
+async function save(e){e.preventDefault();if($('editingTemplateId').value)return updateTemplate();if(pendingSave)return;const d=data(),file=$('referenceFile').files[0];if(!d.machineId||!d.region||!d.system||!d.task)return msg('Makine, Bölge, Sistem ve Bakım zorunlu.','error');if(!file)return msg('Referans resim zorunludur.','error');$('saveBtn').disabled=true;$('saveBtn').textContent='Kaydediliyor...';msg('Resim hazırlanıyor ve kayıt gönderiliyor...');pendingSave={...d};savePollCount=0;try{const b64=await compress(file);$('uploadForm').action=API_URL;$('uploadPayload').value=JSON.stringify(d);$('uploadBase64').value=b64;$('uploadName').value=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');$('uploadType').value='image/jpeg';$('uploadForm').submit();setTimeout(verifySavedRecord,1500);savePollTimer=setInterval(()=>{savePollCount++;verifySavedRecord();if(savePollCount>=12&&pendingSave)finishSaveError('Kayıt yanıtı alınamadı. Kayıt E-Tabloda oluştuysa Listeyi Yenile düğmesine basın.')},1800)}catch(error){finishSaveError(error.message)}}
+window.addEventListener('message',e=>{if(!e.data||e.data.source!=='CMMS_APPS_SCRIPT'||!pendingSave)return;$('debug').textContent=JSON.stringify(e.data,null,2);if(e.data.success)finishSaveSuccess(e.data);else finishSaveError(e.data.message||'Kayıt başarısız')});
+function driveImageId(item){
+  if(item.referenceImageDriveId)return String(item.referenceImageDriveId).trim();
+  const url=String(item.referenceImageUrl||'');
+  const match=url.match(/[?&]id=([^&]+)/)||url.match(/\/d\/([^/]+)/);
+  return match?match[1]:'';
+}
+function imageUrl(item){
+  const id=driveImageId(item);
+  return id?'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1200':String(item.referenceImageUrl||'');
+}
+function imageFallback(img){
+  const id=img.dataset.driveId||'';
+  const step=Number(img.dataset.fallbackStep||0);
+  if(id&&step===0){img.dataset.fallbackStep='1';img.src='https://lh3.googleusercontent.com/d/'+encodeURIComponent(id)+'=w1200';return;}
+  if(id&&step===1){img.dataset.fallbackStep='2';img.src='https://drive.google.com/uc?export=view&id='+encodeURIComponent(id);return;}
+  img.onerror=null;img.classList.add('hidden');const note=img.parentElement.querySelector('.image-error');if(note)note.classList.remove('hidden');
+}
+function groupTemplates(templates){
+  return templates.reduce((groups,item)=>{const key=item.machineId||item.machineName||'DIGER';if(!groups[key])groups[key]={machineId:item.machineId,machineName:item.machineName||'İsimsiz Makine',costCenter:item.costCenter||'',items:[]};groups[key].items.push(item);return groups;},{});
+}
+function renderMachineGroups(templates){
+  const host=$('machineGroups');
+  if(!templates.length){host.innerHTML='<div class="empty-state">Kayıtlı bakım tanımı yok.</div>';return;}
+  const groups=Object.values(groupTemplates(templates)).sort((a,b)=>a.machineName.localeCompare(b.machineName,'tr'));
+  host.innerHTML=groups.map((group,index)=>`<details class="machine-accordion" ${index===0?'open':''}><summary><span class="accordion-arrow">▶</span><span class="machine-summary"><b>${esc(group.machineName)}</b><small>${esc(group.machineId)}${group.costCenter?' • '+esc(group.costCenter):''}</small></span><span class="maintenance-count">${group.items.length} bakım</span></summary><div class="machine-items">${group.items.sort((a,b)=>(a.orderNo||1)-(b.orderNo||1)).map(item=>{const id=driveImageId(item),src=imageUrl(item);return`<article class="maintenance-item"><div class="maintenance-order">${item.orderNo||1}</div><div class="maintenance-content"><h3>${esc(item.task)}</h3><p><b>Bölge / Sistem:</b> ${esc(item.region)} / ${esc(item.system)}</p><p><b>İstenen değer:</b> ${esc(item.targetValue||'-')}</p><p><b>Kullanılacak parça:</b> ${esc(item.part||'-')}</p><span class="badge ${item.photoRequired?'yes':''}">${item.photoRequired?'Kanıt fotoğrafı zorunlu':'Kanıt fotoğrafı isteğe bağlı'}</span><div class="item-actions"><button class="edit-btn" type="button" onclick='editTemplate(${JSON.stringify(item)})'>Düzenle</button><button class="delete-btn" type="button" onclick="deleteTemplate('${esc(item.templateId)}')">Sil</button></div></div><div class="reference-box">${src?`<a href="${esc(item.referenceImageUrl||src)}" target="_blank" rel="noopener"><img class="reference-image" src="${esc(src)}" data-drive-id="${esc(id)}" data-fallback-step="0" onerror="imageFallback(this)" alt="${esc(group.machineName)} bakım noktası referans resmi"><span class="image-error hidden">Resim açılamadı<br><small>Drive paylaşımını kontrol edin</small></span></a>`:'<span class="image-error">Referans resim yok</span>'}</div></article>`;}).join('')}</div></details>`).join('');
+}
+function editTemplate(item){
+  $('editingTemplateId').value=item.templateId||'';
+  $('machineSelect').value=item.machineId||'';
+  const machine=machines.find(x=>x.id===item.machineId);
+  $('machineId').value=machine?.id||item.machineId||'';
+  $('machineName').value=machine?.machineName||item.machineName||'';
+  $('costCenter').value=machine?.costCenter||item.costCenter||'';
+  $('region').value=item.region||'';$('system').value=item.system||'';$('part').value=item.part||'';$('targetValue').value=item.targetValue||'';$('task').value=item.task||'';$('orderNo').value=item.orderNo||1;$('photoRequired').checked=Boolean(item.photoRequired);
+  $('saveBtn').textContent='Bakım Tanımını Güncelle';$('cancelEditBtn').classList.remove('hidden');
+  msg('Düzenleme modu açıldı. Referans resim değiştirilmez; yeni resim gerekirse yeni bakım kaydı oluşturun.','success');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelEdit(){
+  $('editingTemplateId').value='';$('saveBtn').textContent='Resmi Yükle ve Bakımı Kaydet';$('cancelEditBtn').classList.add('hidden');
+  $('region').value='';$('system').value='';$('part').value='';$('targetValue').value='';$('task').value='';$('orderNo').value='1';$('photoRequired').checked=false;$('referenceFile').value='';$('preview').classList.add('hidden');msg('Düzenleme iptal edildi.');
+}
+async function updateTemplate(){
+  const d=data();d.templateId=$('editingTemplateId').value;d.active=true;
+  $('saveBtn').disabled=true;msg('Bakım tanımı güncelleniyor...');
+  try{const r=await jp('updateMaintenanceTemplate',{payload:JSON.stringify(d)});$('debug').textContent=JSON.stringify(r,null,2);if(!r.success)throw Error(r.message);msg('✅ Bakım tanımı güncellendi - '+r.templateId,'success');cancelEdit();await list()}catch(e){msg(e.message,'error')}finally{$('saveBtn').disabled=false}
+}
+async function deleteTemplate(templateId){
+  if(!confirm('Bu bakım tanımı kalıcı olarak silinsin mi?'))return;
+  try{const r=await jp('deleteMaintenanceTemplate',{templateId});$('debug').textContent=JSON.stringify(r,null,2);if(!r.success)throw Error(r.message);msg('Bakım tanımı silindi.','success');await list()}catch(e){msg(e.message,'error')}
+}
+async function list(){try{const r=await jp('listMaintenanceTemplates');if(!r.success)throw Error(r.message);$('debug').textContent=JSON.stringify(r,null,2);renderMachineGroups(r.templates||[])}catch(e){msg(e.message,'error');$('machineGroups').innerHTML='<div class="empty-state error">Liste yüklenemedi: '+esc(e.message)+'</div>'}}
+$('cancelEditBtn').onclick=cancelEdit;$('referenceFile').onchange=e=>{const f=e.target.files[0];if(f){$('preview').src=URL.createObjectURL(f);$('preview').classList.remove('hidden')}};$('machineSelect').onchange=selectMachine;$('form').onsubmit=save;$('refreshBtn').onclick=list;$('testBtn').onclick=async()=>{try{const r=await jp('health');$('debug').textContent=JSON.stringify(r,null,2);msg('Bağlantı başarılı: '+r.version,'success')}catch(e){msg(e.message,'error')}};loadMachines();list();
+</script></body></html>
