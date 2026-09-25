@@ -1,25 +1,7 @@
 'use strict';
 const API_URL='https://script.google.com/macros/s/AKfycbwjECihD-JQg6ITpewj4ga3HzMraB4sUNhrCf40l6Fjlf2EOhIY9oMknFHAnG_XTCPP/exec';
-const SESSION_KEY='haftalikBakimV530User';const $=id=>document.getElementById(id);
-function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$(id).classList.add('active')}
-function message(t,type=''){const x=$('loginMessage');x.textContent=t;x.className='message '+type}
-function toast(t){$('toast').textContent=t;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2400)}
-function jsonp(action,params={}){return new Promise((resolve,reject)=>{const cb='cmms_'+Date.now()+'_'+Math.floor(Math.random()*99999),s=document.createElement('script');let done=false;const clean=()=>{delete window[cb];if(s.parentNode)s.remove()};const timer=setTimeout(()=>{if(done)return;done=true;clean();reject(new Error('Bağlantı zaman aşımına uğradı.'))},15000);window[cb]=d=>{if(done)return;done=true;clearTimeout(timer);clean();resolve(d)};s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);clean();reject(new Error('Apps Script bağlantısı kurulamadı.'))};s.src=API_URL+'?'+new URLSearchParams({action,callback:cb,_:Date.now(),...params});document.head.appendChild(s)})}
-async function testApi(){message('Bağlantı test ediliyor...');try{const r=await jsonp('health');$('debugOutput').textContent=JSON.stringify(r,null,2);if(!r.success)throw Error(r.message);message('Bağlantı başarılı. Sürüm: '+r.version,'success')}catch(e){message(e.message,'error')}}
-async function login(){const password=$('password').value.trim();if(!password)return message('Şifre giriniz.','error');$('loginBtn').disabled=true;try{const r=await jsonp('login',{password});$('debugOutput').textContent=JSON.stringify(r,null,2);if(!r.success||!r.user)throw Error(r.message||'Giriş başarısız');sessionStorage.setItem(SESSION_KEY,JSON.stringify(r.user));openHome(r.user)}catch(e){message(e.message,'error')}finally{$('loginBtn').disabled=false}}
-function openHome(u){
-  const isAdmin=String(u.role||'').toLocaleLowerCase('tr-TR').includes('admin');
-  if(!isAdmin){
-    sessionStorage.setItem(SESSION_KEY,JSON.stringify(u));
-    window.location.replace('weekly-maintenance.html');
-    return;
-  }
-  $('welcome').textContent='Hoş geldiniz, '+u.operator;
-  $('role').textContent=u.role||'admin';
-  $('email').textContent=u.email||'-';
-  $('adminHomeActions').classList.remove('hidden');
-  $('logoutBtn').classList.remove('hidden');
-  show('homeView');
-}
-function logout(){sessionStorage.removeItem(SESSION_KEY);$('logoutBtn').classList.add('hidden');$('password').value='';show('loginView')}
-$('loginBtn').onclick=login;$('apiTestBtn').onclick=testApi;$('logoutBtn').onclick=logout;$('password').onkeydown=e=>{if(e.key==='Enter')login()};$('adminBtn').onclick=()=>location.href='admin-maintenance.html';$('maintenanceBtn').onclick=()=>location.href='weekly-maintenance.html';try{const u=JSON.parse(sessionStorage.getItem(SESSION_KEY));if(u?.operator)openHome(u)}catch(e){}
+const SESSION='haftalikBakimV544User',$=id=>document.getElementById(id);
+function jsonp(action,params={}){return new Promise((resolve,reject)=>{const cb='cb_'+Date.now()+'_'+Math.floor(Math.random()*9999),s=document.createElement('script');let done=false;const clean=()=>{delete window[cb];s.remove()};const timer=setTimeout(()=>{if(!done){done=true;clean();reject(Error('Bağlantı zaman aşımına uğradı.'))}},20000);window[cb]=r=>{if(done)return;done=true;clearTimeout(timer);clean();resolve(r)};s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);clean();reject(Error('Apps Script bağlantısı kurulamadı.'))};s.src=API_URL+'?'+new URLSearchParams({action,callback:cb,_:Date.now(),...params});document.head.appendChild(s)})}
+function loading(p,t,n=''){ $('loader').classList.remove('hide');$('bar').style.width=p+'%';$('percent').textContent=p+'%';$('loadText').textContent=t;$('loadTitle').textContent=(n?n+' için ':'')+'sistem yükleniyor'}
+async function login(){const password=$('password').value.trim();if(!password)return $('msg').textContent='Şifre girin.';$('loginBtn').disabled=true;try{const r=await jsonp('login',{password});$('debug').textContent=JSON.stringify(r,null,2);if(!r.success)throw Error(r.message);sessionStorage.setItem(SESSION,JSON.stringify(r.user));const admin=String(r.user.role||'').toLocaleLowerCase('tr').includes('admin');if(admin){$('login').classList.add('hide');$('home').classList.remove('hide');$('welcome').textContent='Hoş geldiniz, '+r.user.operator;$('logout').classList.remove('hide')}else{loading(15,'Kullanıcı doğrulandı.',r.user.operator);setTimeout(()=>location.replace('weekly-maintenance.html'),150)}}catch(e){$('msg').textContent=e.message}finally{$('loginBtn').disabled=false}}
+$('loginBtn').onclick=login;$('password').onkeydown=e=>{if(e.key==='Enter')login()};$('testBtn').onclick=async()=>{try{const r=await jsonp('health');$('debug').textContent=JSON.stringify(r,null,2);$('msg').textContent='Bağlantı başarılı: '+r.version}catch(e){$('msg').textContent=e.message}};$('opBtn').onclick=()=>location.href='weekly-maintenance.html';$('adminBtn').onclick=()=>location.href='admin-maintenance.html';$('logout').onclick=()=>{sessionStorage.removeItem(SESSION);location.reload()};

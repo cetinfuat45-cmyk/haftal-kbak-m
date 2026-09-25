@@ -1,12 +1,9 @@
-# Haftalık Bakım CMMS V5.4.1
+# Haftalık Bakım CMMS V5.4.5
 
-## Ana sayfa değişikliği
-- Teknisyen giriş yaptıktan sonra ayrı QR / Haftalık Bakım butonlarını görmez.
-- Bakımı yapılacak makineler listesi doğrudan teknisyenin ana sayfası olarak açılır.
-- Operatör adı ve yetkisi makine listesinin üstünde gösterilir.
-- Makineye dokununca QR doğrulama ekranı açılır.
-- QR eşleşirse bakım listesi, ardından kontrol sayfası açılır.
-- Admin kullanıcı ana panelde Admin Paneli ve Operatör Bakım Paneli seçeneklerini görür.
-
-## Korunan özellikler
-Makine arama, QR doğrulama, manuel MachineID doğrulama, referans resim, UYGUN/RED, kanıt fotoğrafı ve weeklyMaintenanceRecords kaydı korunur.
+## Menü düzeltmeleri
+- Operatör üst menüsü tek satır ve mobil uyumlu hale getirildi.
+- Üst menüye **Ana Menü** ve **Çıkış** düğmeleri eklendi.
+- Ana Menü, makine listesi ekranında pasiftir.
+- QR, bakım listesi veya kontrol ekranından Ana Menü seçilirse yeniden QR okutma uyarısı gösterilir.
+- Uyarı onaylanırsa seçili makine, bakım ve QR durumu temizlenerek makine listesine dönülür.
+- Çıkışta oturum temizlenir ve giriş ekranına dönülür.
