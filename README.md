@@ -1,9 +1,10 @@
-# Haftalık Bakım CMMS V5.4.6
+# Haftalık Bakım CMMS V5.4.8
 
-## QR eşleştirme düzeltmesi
-- QR metnindeki boşluk, satır sonu ve kontrol karakterleri temizlenir.
-- URL-encoded değer iki aşamaya kadar çözülür.
-- Düz MachineID, URL parametresi, JSON, `MachineID=...`, `row=...` ve satır ayrılmış QR içerikleri desteklenir.
-- Karşılaştırmada büyük/küçük harf, tire, boşluk ve noktalama farkları normalize edilir.
-- Hatalı etikette beklenen ve okunan değer kullanıcıya gösterilir.
-- Doğru eşleşmede kamera durdurulur ve bakım listesi açılır.
+## Menü ve operatör adı düzeltmeleri
+- Üst menüde sabit `OPERATÖR` yerine giriş yapan kullanıcının adı kısaltılmış biçimde gösterilir.
+- Örnek: `Murat Acar` → `M.ACAR`.
+- Güncel ve eski sessionStorage anahtarları sırayla kontrol edilir.
+- Ana Menü düğmesi ev simgesine dönüştürüldü.
+- Çıkış düğmesi çıkış simgesine dönüştürüldü.
+- İkonlarda erişilebilir `title` ve `aria-label` metinleri korunur.
+- QR, kontrol ve güvenli ana menü dönüş akışları korunur.
