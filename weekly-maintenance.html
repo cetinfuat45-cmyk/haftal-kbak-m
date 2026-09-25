@@ -1,26 +1,67 @@
-<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OP Paneli V5.4.5</title><link rel="stylesheet" href="style.css"><script src="https://unpkg.com/html5-qrcode" defer></script></head><body><header class="app-header"><div class="brand"><img src="AKGLOG.png" alt="AKG"><span>Haftalık Bakım OP Paneli</span></div><nav class="header-actions" aria-label="Operatör menüsü"><button id="mainMenuBtn" class="header-btn" type="button">Ana Menü</button><button id="exitBtn" class="header-btn danger" type="button">Çıkış</button></nav></header><main>
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OP Paneli V5.4.6</title><link rel="stylesheet" href="style.css"><script src="https://unpkg.com/html5-qrcode" defer></script></head><body><header><img src="AKGLOG.png"><b>Haftalık Bakım OP Paneli</b><button onclick="location.href='index.html'">Ana Sayfa</button></header><main>
 <section id="machines" class="card"><h1>Bakımı Yapılacak Makineler</h1><input id="search" placeholder="Makine adı ile ara"><div id="machineList"></div><div id="msg"></div></section>
 <section id="qr" class="card hide"><button onclick="step('machines')">← Geri</button><h2 id="qrName"></h2><div id="reader"></div><input id="manual" placeholder="Manuel Makine ID"><button id="verify">Doğrula</button><div id="qrMsg"></div></section>
 <section id="tasks" class="card hide"><button onclick="step('machines')">← Makineler</button><h2 id="taskName"></h2><div id="taskList"></div></section>
 <section id="control" class="card hide"><button onclick="step('tasks')">← Bakımlar</button><h2 id="controlName"></h2><img id="ref" class="reference hide"><p><b>İstenen:</b> <span id="target"></span></p><select id="result"><option value="">Sonuç seçin</option><option>UYGUN</option><option>RED</option></select><textarea id="desc" placeholder="Açıklama"></textarea><input id="proof" type="file" accept="image/*" capture="environment"><button id="save">Kontrolü Kaydet</button><div id="saveMsg"></div></section></main>
-<div id="menuConfirm" class="confirm-overlay hide" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><div class="confirm-card"><h2 id="confirmTitle">Ana menüye dönülsün mü?</h2><p>Bu ekrandan ayrılırsanız makineyi yeniden seçmeniz ve QR kodunu tekrar okutmanız gerekir.</p><div class="confirm-actions"><button id="cancelMenu" class="secondary" type="button">Vazgeç</button><button id="confirmMenu" type="button">Ana Menüye Dön</button></div></div></div><div id="loader" class="overlay"><div class="modal"><img src="AKGLOG.png"><h2 id="loadTitle">Sistem yükleniyor</h2><p id="loadText">Kullanıcı bilgileri hazırlanıyor...</p><div class="track"><div id="bar"></div></div><b id="percent">0%</b><button id="retry" class="hide">Tekrar Dene</button></div></div>
+<div id="loader" class="overlay"><div class="modal"><img src="AKGLOG.png"><h2 id="loadTitle">Sistem yükleniyor</h2><p id="loadText">Kullanıcı bilgileri hazırlanıyor...</p><div class="track"><div id="bar"></div></div><b id="percent">0%</b><button id="retry" class="hide">Tekrar Dene</button></div></div>
 <iframe name="postFrame" class="hide"></iframe><form id="postForm" target="postFrame" method="post" class="hide"><input name="action" value="saveMaintenanceResultWithImage"><input name="payload" id="payload"><input name="imageBase64" id="base64"><input name="imageName" id="imageName"><input name="imageType" id="imageType"></form>
 <script>
 'use strict';const API_URL='https://script.google.com/macros/s/AKfycbwjECihD-JQg6ITpewj4ga3HzMraB4sUNhrCf40l6Fjlf2EOhIY9oMknFHAnG_XTCPP/exec',SESSION='haftalikBakimV544User',$=id=>document.getElementById(id);let machineData=[],filtered=[],byMachine={},selectedMachine=null,taskData=[],selectedTask=null,qr=null,pending=null;
 function jp(action,p={}){return new Promise((ok,no)=>{const cb='op_'+Date.now()+Math.random().toString(16).slice(2),s=document.createElement('script');let done=false;const clean=()=>{delete window[cb];s.remove()};const timer=setTimeout(()=>{if(!done){done=true;clean();no(Error('Bağlantı zaman aşımı'))}},20000);window[cb]=r=>{if(done)return;done=true;clearTimeout(timer);clean();ok(r)};s.onerror=()=>{done=true;clearTimeout(timer);clean();no(Error('Bağlantı kurulamadı'))};s.src=API_URL+'?'+new URLSearchParams({action,callback:cb,_:Date.now(),...p});document.head.appendChild(s)})}
-function progress(p,t){$('bar').style.width=p+'%';$('percent').textContent=p+'%';$('loadText').textContent=t}let currentStep='machines';function step(id){currentStep=id;['machines','qr','tasks','control'].forEach(x=>$(x).classList.toggle('hide',x!==id));$('mainMenuBtn').disabled=id==='machines'}function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function progress(p,t){$('bar').style.width=p+'%';$('percent').textContent=p+'%';$('loadText').textContent=t}function step(id){['machines','qr','tasks','control'].forEach(x=>$(x).classList.toggle('hide',x!==id))}function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function init(){try{const u=JSON.parse(sessionStorage.getItem(SESSION)||'{}');$('loadTitle').textContent=(u.operator||'Operatör')+' için sistem yükleniyor';progress(15,'Kullanıcı bilgileri hazırlanıyor...');progress(30,'Bakım verileri alınıyor...');const r=await jp('getWeeklyBootstrap');if(!r.success)throw Error(r.message);progress(70,'Makine ve bakımlar belleğe alınıyor...');machineData=r.machines||[];filtered=machineData;byMachine=r.templatesByMachine||{};render();progress(90,'QR eşleştirmeleri hazırlanıyor...');setTimeout(()=>{$('loader').classList.add('hide');progress(100,'Sistem hazır')},300)}catch(e){$('loadText').textContent=e.message;$('retry').classList.remove('hide')}}
 function render(){ $('machineList').innerHTML=filtered.map(m=>`<button class="listBtn" data-id="${esc(m.id)}"><b>${esc(m.machineName)}</b><small>${esc(m.id)}</small></button>`).join('')||'Kayıt yok';document.querySelectorAll('.listBtn').forEach(b=>b.onclick=()=>selectMachine(b.dataset.id))}
 async function selectMachine(id){selectedMachine=machineData.find(x=>x.id===id);$('qrName').textContent=selectedMachine.machineName;step('qr');if(window.Html5Qrcode){try{qr=new Html5Qrcode('reader');await qr.start({facingMode:'environment'},{fps:10,qrbox:230},verify,()=>{})}catch(e){$('qrMsg').textContent='Kamera açılamadı, manuel ID kullanın.'}}}
-async function verify(value){if(String(value).trim()!==selectedMachine.id)return $('qrMsg').textContent='Hatalı makine etiketi.';if(qr)try{await qr.stop();qr.clear()}catch(e){}taskData=(byMachine[selectedMachine.id]||[]).filter(x=>x.active);$('taskName').textContent=selectedMachine.machineName;$('taskList').innerHTML=taskData.map(t=>`<button class="listBtn" data-id="${esc(t.templateId)}"><b>${esc(t.task)}</b><small>${esc(t.region)} / ${esc(t.system)}</small></button>`).join('');document.querySelectorAll('#taskList .listBtn').forEach(b=>b.onclick=()=>openControl(b.dataset.id));step('tasks')}
+function normalizeQrText(value){
+  let text=String(value??'').replace(/[\u0000-\u001F\u007F]/g,'').trim();
+  for(let i=0;i<2;i++){try{const decoded=decodeURIComponent(text);if(decoded===text)break;text=decoded.trim()}catch(e){break}}
+  return text;
+}
+function machineKey(value){
+  return normalizeQrText(value).toLocaleUpperCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/İ/g,'I').replace(/[^A-Z0-9]/g,'');
+}
+function qrCandidates(value){
+  const raw=normalizeQrText(value),values=[raw];
+  try{
+    const obj=JSON.parse(raw);
+    ['machineId','MachineID','machineID','id','ID','row','Row','key','Key'].forEach(k=>{if(obj&&obj[k]!=null)values.push(String(obj[k]))});
+  }catch(e){}
+  try{
+    const url=new URL(raw);
+    ['machineId','MachineID','id','ID','row','Row','key','Key'].forEach(k=>{const v=url.searchParams.get(k);if(v)values.push(v)});
+    const parts=url.pathname.split('/').filter(Boolean);if(parts.length)values.push(parts[parts.length-1]);
+  }catch(e){}
+  raw.split(/[\n\r;|,\t]/).forEach(v=>{if(v.trim())values.push(v.trim())});
+  const pairs=raw.match(/(?:machine\s*id|machineid|makine\s*id|id|row|key)\s*[:=]\s*([^&;|,\s]+)/ig)||[];
+  pairs.forEach(pair=>values.push(pair.replace(/^.*?[:=]\s*/,'')));
+  return [...new Set(values.map(normalizeQrText).filter(Boolean))];
+}
+function matchQrToMachine(value,machine){
+  const expected=machineKey(machine?.id||'');
+  const candidates=qrCandidates(value);
+  const match=candidates.find(v=>machineKey(v)===expected);
+  return {matched:Boolean(match),match,candidates,expected,raw:normalizeQrText(value)};
+}
+async function verify(value){
+  if(!selectedMachine)return;
+  const check=matchQrToMachine(value,selectedMachine);
+  $('qrMsg').textContent='Okunan QR: '+check.raw;
+  if(!check.matched){
+    $('qrMsg').className='error';
+    $('qrMsg').textContent='Hatalı makine etiketi. Beklenen ID: '+selectedMachine.id+' | Okunan: '+check.raw;
+    return;
+  }
+  $('qrMsg').className='success';
+  $('qrMsg').textContent='Makine doğrulandı: '+selectedMachine.machineName;
+  if(qr)try{await qr.stop();qr.clear()}catch(e){}qr=null;
+  taskData=(byMachine[selectedMachine.id]||[]).filter(x=>x.active);
+  $('taskName').textContent=selectedMachine.machineName;
+  $('taskList').innerHTML=taskData.map(t=>`<button class="listBtn" data-id="${esc(t.templateId)}"><b>${esc(t.task)}</b><small>${esc(t.region)} / ${esc(t.system)}</small></button>`).join('')||'Aktif bakım maddesi yok.';
+  document.querySelectorAll('#taskList .listBtn').forEach(b=>b.onclick=()=>openControl(b.dataset.id));
+  step('tasks');
+}
 function openControl(id){selectedTask=taskData.find(x=>x.templateId===id);$('controlName').textContent=selectedTask.task;$('target').textContent=selectedTask.targetValue||'-';const src=selectedTask.referenceImageUrl;if(src){$('ref').src=src;$('ref').classList.remove('hide')}else $('ref').classList.add('hide');$('result').value='';$('desc').value='';$('proof').value='';step('control')}
 function compress(f){return new Promise((ok,no)=>{if(!f)return ok('');const rd=new FileReader(),im=new Image();rd.onload=e=>im.src=e.target.result;rd.onerror=no;im.onload=()=>{const q=Math.min(1,1200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*q;c.height=im.height*q;c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.75).split(',')[1])};rd.readAsDataURL(f)})}
 async function save(){if(pending)return;const result=$('result').value,file=$('proof').files[0];if(!result)return $('saveMsg').textContent='Sonuç seçin.';if(selectedTask.photoRequired&&!file)return $('saveMsg').textContent='Kanıt fotoğrafı zorunlu.';const u=JSON.parse(sessionStorage.getItem(SESSION)||'{}'),req='REQ-'+Date.now();pending=req;$('save').disabled=true;$('saveMsg').textContent='Kaydediliyor...';try{const b64=await compress(file),p={clientRequestId:req,templateId:selectedTask.templateId,machineId:selectedMachine.id,machineName:selectedMachine.machineName,operator:u.operator||'',result,description:$('desc').value,weekKey:new Date().toISOString().slice(0,10)};$('postForm').action=API_URL;$('payload').value=JSON.stringify(p);$('base64').value=b64;$('imageName').value=file?file.name:'';$('imageType').value=file?'image/jpeg':'';$('postForm').submit();setTimeout(async()=>{if(!pending)return;try{const r=await jp('listMaintenanceRecords',{clientRequestId:req});if(r.records&&r.records.length)done(r.records[0])}catch(e){}},1800)}catch(e){fail(e.message)}}function done(r){if(!pending)return;pending=null;$('save').disabled=false;$('saveMsg').textContent='✅ Kontrol kaydedildi - '+(r.recordId||'');setTimeout(()=>step('tasks'),800)}function fail(t){pending=null;$('save').disabled=false;$('saveMsg').textContent=t}window.addEventListener('message',e=>{if(e.data&&e.data.source==='CMMS_APPS_SCRIPT_RESULT'){e.data.success?done(e.data):fail(e.data.message)}});
-async function stopActiveQr(){if(qr){try{await qr.stop();qr.clear()}catch(e){}qr=null}}
-function requestMainMenu(){if(currentStep==='machines')return;stopActiveQr();$('menuConfirm').classList.remove('hide')}
-function closeMenuConfirm(){$('menuConfirm').classList.add('hide')}
-function returnToMainMenu(){closeMenuConfirm();selectedMachine=null;selectedTask=null;taskData=[];$('manual').value='';$('qrMsg').textContent='';$('saveMsg').textContent='';step('machines')}
-function exitSystem(){const warning=currentStep==='machines'?'Sistemden çıkmak istiyor musunuz?':'Sistemden çıkarsanız mevcut bakım ekranı kapanır ve tekrar QR okutmanız gerekir. Çıkılsın mı?';if(!confirm(warning))return;stopActiveQr();sessionStorage.removeItem(SESSION);location.href='index.html'}
-$('mainMenuBtn').onclick=requestMainMenu;$('exitBtn').onclick=exitSystem;$('cancelMenu').onclick=closeMenuConfirm;$('confirmMenu').onclick=returnToMainMenu;$('menuConfirm').onclick=e=>{if(e.target===$('menuConfirm'))closeMenuConfirm()};
-$('search').oninput=e=>{const q=e.target.value.toLocaleLowerCase('tr');filtered=machineData.filter(x=>x.machineName.toLocaleLowerCase('tr').includes(q));render()};$('verify').onclick=()=>verify($('manual').value);$('save').onclick=save;$('retry').onclick=init;$('mainMenuBtn').disabled=true;init();
+$('search').oninput=e=>{const q=e.target.value.toLocaleLowerCase('tr');filtered=machineData.filter(x=>x.machineName.toLocaleLowerCase('tr').includes(q));render()};$('verify').onclick=()=>verify($('manual').value);$('save').onclick=save;$('retry').onclick=init;init();
 </script></body></html>
