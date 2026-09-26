@@ -1,10 +1,7 @@
-# Haftalık Bakım CMMS V5.4.8
+# Haftalık Bakım CMMS V5.4.10
 
-## Menü ve operatör adı düzeltmeleri
-- Üst menüde sabit `OPERATÖR` yerine giriş yapan kullanıcının adı kısaltılmış biçimde gösterilir.
-- Örnek: `Murat Acar` → `M.ACAR`.
-- Güncel ve eski sessionStorage anahtarları sırayla kontrol edilir.
-- Ana Menü düğmesi ev simgesine dönüştürüldü.
-- Çıkış düğmesi çıkış simgesine dönüştürüldü.
-- İkonlarda erişilebilir `title` ve `aria-label` metinleri korunur.
-- QR, kontrol ve güvenli ana menü dönüş akışları korunur.
+## Numaralı bakım ilerleme barı
+- Makine adı korunur.
+- Her bakım segmentinin üzerinde sıra numarası görünür: 1, 2, 3...
+- Bekleyen bakım açık kırmızı, tamamlanan uygun bakım yeşil, problemli veya RED bakım koyu kırmızıdır.
+- Kontrol kaydedildikçe ilgili segment otomatik güncellenir.
