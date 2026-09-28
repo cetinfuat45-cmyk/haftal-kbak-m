@@ -1,7 +1,6 @@
-# Haftalık Bakım CMMS V5.4.10
+# Haftalık Bakım CMMS V5.4.12
 
-## Numaralı bakım ilerleme barı
-- Makine adı korunur.
-- Her bakım segmentinin üzerinde sıra numarası görünür: 1, 2, 3...
-- Bekleyen bakım açık kırmızı, tamamlanan uygun bakım yeşil, problemli veya RED bakım koyu kırmızıdır.
-- Kontrol kaydedildikçe ilgili segment otomatik güncellenir.
+- Admin bakım kartlarındaki Düzenle ve Sil butonları küçük SVG ikonlara dönüştürüldü.
+- Düzenle için kalem, Sil için çöp kutusu ikonu kullanıldı.
+- Referans resimleri sabit 220x140 kutuda `object-fit: contain` ile gösterilir; satır dışına taşmaz ve kaymaz.
+- Mobilde resim kutusu tam genişliğe geçer.
