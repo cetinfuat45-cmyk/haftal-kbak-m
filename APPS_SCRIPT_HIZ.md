@@ -1,9 +1,10 @@
-# Apps Script Notları (V5.4.14)
+# Apps Script Notları
 
 ## 1. Durum renkleri için gerekli alan
 
-Operatör ekranındaki renkli numara barının sunucu verisiyle çalışması için
-`getWeeklyBootstrap` yanıtına bu haftanın sonuç kayıtları eklenmelidir:
+Operatör ekranındaki renkli numara barının tüm operatörlerde ortak
+çalışması için `getWeeklyBootstrap` yanıtına bu haftanın sonuç kayıtları
+eklenmelidir:
 
 ```javascript
 function getWeeklyBootstrap() {
@@ -16,55 +17,37 @@ function getWeeklyBootstrap() {
 }
 
 function getWeekResults() {
-  const sheet = ss().getSheetByName('sonuclar');
-  const values = sheet.getDataRange().getValues();
+  const values = ss().getSheetByName('sonuclar').getDataRange().getValues();
   const head = values[0];
   const iMachine = head.indexOf('machineId');
   const iTemplate = head.indexOf('templateId');
   const iResult = head.indexOf('result');
   const iWeek = head.indexOf('weekKey');
-
-  return values.slice(1)
-    .filter(r => r[iTemplate])
-    .map(r => ({
-      machineId: String(r[iMachine]),
-      templateId: String(r[iTemplate]),
-      result: String(r[iResult]),
-      weekKey: String(r[iWeek])
-    }));
+  return values.slice(1).filter(r => r[iTemplate]).map(r => ({
+    machineId: String(r[iMachine]),
+    templateId: String(r[iTemplate]),
+    result: String(r[iResult]),
+    weekKey: String(r[iWeek])
+  }));
 }
 ```
 
-Ön yüz şu alan adlarını otomatik tanır:
+Ön yüz şu alan adlarını tanır:
 `results`, `records`, `maintenanceResults`, `weeklyResults`, `sonuclar`.
 
-Sonuç değerinde **RED** geçiyorsa numara kırmızı (#FF9999), aksi halde
-yeşil (#99FF99) olur. Kayıt yoksa turuncu (#FFB733) kalır.
-
-Bu alan eklenmezse sistem yine çalışır; renkler operatörün kendi cihazındaki
-haftalık yerel kayıttan üretilir.
-
----
+Sonuçta **RED** geçiyorsa numara kırmızı, aksi halde yeşil olur.
+Kayıt yoksa turuncu kalır.
 
 ## 2. Hücre hücre okuma yapmayın
 
 Yavaş:
-
 ```javascript
-for (var i = 2; i <= sheet.getLastRow(); i++) {
-  var id = sheet.getRange(i, 1).getValue();
-}
+for (var i = 2; i <= sheet.getLastRow(); i++) { sheet.getRange(i,1).getValue(); }
 ```
-
 Hızlı:
-
 ```javascript
 const values = sheet.getDataRange().getValues();
 ```
-
-Bu tek değişiklik süreyi çoğu durumda 10 kat düşürür.
-
----
 
 ## 3. CacheService kullanın
 
@@ -83,14 +66,6 @@ function listMachinesCached() {
 }
 ```
 
-Kayıt sonrası temizleyin:
-
-```javascript
-CacheService.getScriptCache().removeAll(['machines_v1', 'templates_v1']);
-```
-
----
-
 ## 4. openById çağrısını tekrarlamayın
 
 ```javascript
@@ -98,18 +73,7 @@ let _ss = null;
 function ss() { if (!_ss) _ss = SpreadsheetApp.openById(SHEET_ID); return _ss; }
 ```
 
----
-
-## 5. Ağır E-Tablo formüllerini kaldırın
-
-`IMPORTRANGE`, tüm sütunu tarayan `ARRAYFORMULA`, `NOW()`, `TODAY()` her
-okumada yeniden hesaplanır ve bağlantıyı yavaşlatır.
-
----
-
-## 6. Ölçüm
-
-Giriş ekranındaki **Bağlantıyı Test Et** düğmesi yanıt süresini gösterir.
+## 5. Ölçüm
 
 | Süre | Değerlendirme |
 |---|---|

@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OP Paneli V5.4.14</title>
+<title>OP Paneli V5.4.15</title>
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="dns-prefetch" href="https://script.google.com">
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
 <link rel="dns-prefetch" href="https://unpkg.com">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="style.css">
 <style>
 /* ===== V5.4.14 Makine kartı ve durum barı ===== */
@@ -32,7 +33,22 @@
 .task-text{display:flex;flex-direction:column;min-width:0}
 .task-text b{font-size:15px}
 .task-text small{color:#64748b}
-@media(max-width:600px){.step{min-width:31px;height:31px;font-size:14px}.machine-card .mc-name{font-size:16px}}
+
+/* ===== V5.4.15 QR kamera alanı ===== */
+#reader{width:100%;max-width:420px;min-height:260px;margin:12px auto;background:#0b1626;border-radius:14px;overflow:hidden;display:grid;place-items:center}
+#reader video{width:100%!important;height:auto!important;display:block;object-fit:cover}
+#reader canvas{max-width:100%}
+#reader:empty::before{content:"Kamera kapalı";color:#7c93ad;font-size:14px}
+.qr-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.qr-actions button{width:auto;flex:1 1 150px;margin:0}
+.qr-hint{background:#fff7e6;border:1px solid #ffd591;border-radius:10px;padding:12px;font-size:13px;color:#7a4b00;margin:10px 0}
+.qr-hint b{display:block;margin-bottom:5px}
+.qr-hint ul{margin:6px 0 0 18px;padding:0}
+.qr-state{font-weight:700;margin:6px 0}
+.qr-state.ok{color:#167a42}
+.qr-state.err{color:#c62828}
+.manual-box{border-top:1px solid #dce5ef;margin-top:14px;padding-top:12px}
+@media(max-width:600px){.step{min-width:31px;height:31px;font-size:14px}.machine-card .mc-name{font-size:16px}#reader{min-height:230px}}
 </style>
 </head>
 <body>
@@ -49,7 +65,27 @@
   <div id="machineList"></div>
   <div id="msg"></div>
 </section>
-<section id="qr" class="card hide"><button onclick="step('machines')">← Geri</button><h2 id="qrName"></h2><div id="reader"></div><input id="manual" placeholder="Manuel Makine ID"><button id="verify">Doğrula</button><div id="qrMsg"></div></section>
+
+<section id="qr" class="card hide">
+  <button onclick="leaveQr()">← Geri</button>
+  <h2 id="qrName"></h2>
+  <p class="muted">Makine üzerindeki QR etiketini kameraya okutun.</p>
+  <div id="reader"></div>
+  <div class="qr-actions">
+    <button id="camStart" type="button">Kamerayı Başlat</button>
+    <button id="camSwitch" class="secondary hide" type="button">Kamerayı Değiştir</button>
+    <button id="camStop" class="secondary hide" type="button">Kamerayı Durdur</button>
+  </div>
+  <div id="qrState" class="qr-state"></div>
+  <div id="qrHelp" class="qr-hint hide"></div>
+  <div class="manual-box">
+    <label><b>Kamera çalışmıyorsa manuel giriş</b></label>
+    <input id="manual" placeholder="Manuel Makine ID">
+    <button id="verify">Doğrula</button>
+  </div>
+  <div id="qrMsg"></div>
+</section>
+
 <section id="tasks" class="card hide"><button onclick="step('machines')">← Makineler</button><h2 id="taskName"></h2><div id="taskList"></div></section>
 <section id="control" class="card hide"><button onclick="step('tasks')">← Bakımlar</button><h2 id="controlName"></h2><img id="ref" class="reference hide" loading="lazy" decoding="async"><p><b>İstenen:</b> <span id="target"></span></p><select id="result"><option value="">Sonuç seçin</option><option>UYGUN</option><option>RED</option></select><textarea id="desc" placeholder="Açıklama"></textarea><input id="proof" type="file" accept="image/*" capture="environment"><button id="save">Kontrolü Kaydet</button><div id="saveMsg"></div></section>
 </main>
@@ -61,17 +97,24 @@
 <script src="net.js"></script>
 <script>
 'use strict';
-/* Operatör Paneli V5.4.14
-   - Makine kartında yalnızca makine adı görünür (ID gizli).
-   - Bakımlar 1, 2, 3 ... şeklinde renkli bar olarak gösterilir.
-   - Bekleyen #FFB733 | Tamamlanan #99FF99 | Red #FF9999
+/* Operatör Paneli V5.4.15
+   QR KAMERA DÜZELTMELERİ:
+   - Güvenli bağlam (HTTPS) denetimi ve açık Türkçe uyarı
+   - Kamera izni için ayrı "Kamerayı Başlat" düğmesi (iOS/Safari gereksinimi)
+   - Kamera listesi taranır, arka kamera adından da seçilir
+   - facingMode başarısız olursa deviceId ile yeniden denenir
+   - Kamera kutusu (qrbox) ekran genişliğine göre hesaplanır
+   - Önceki kamera örneği tam temizlenir (ikinci açılışta donma giderildi)
+   - Hata türüne göre ayrı çözüm metni gösterilir
+   - CDN erişilemezse yedek CDN denenir
 */
 const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
-const STATUS_KEY = 'cmmsDurum_V5414';
+const STATUS_KEY = 'cmmsDurum_V5415';
 let machineData = [], filtered = [], byMachine = {}, selectedMachine = null,
-    taskData = [], selectedTask = null, qr = null, pending = null,
+    taskData = [], selectedTask = null, pending = null,
     pendingTimer = null, currentStep = 'machines', qrLibPromise = null,
-    statusMap = {};
+    statusMap = {}, qr = null, qrRunning = false,
+    cameraList = [], cameraIndex = 0;
 
 function step(id){ currentStep=id; ['machines','qr','tasks','control'].forEach(x=>$(x).classList.toggle('hide',x!==id)); $('mainMenuBtn').disabled=false; }
 function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -89,53 +132,254 @@ function weekKey(){
 
 /* ---------- Durum yönetimi ---------- */
 function sKey(machineId,templateId){ return machineId+'||'+templateId; }
-
 function loadLocalStatus(){
-  try{
-    const box=JSON.parse(localStorage.getItem(STATUS_KEY)||'null');
-    if(box && box.week===weekKey() && box.map) return box.map;
-  }catch(e){}
+  try{ const box=JSON.parse(localStorage.getItem(STATUS_KEY)||'null');
+    if(box && box.week===weekKey() && box.map) return box.map; }catch(e){}
   return {};
 }
 function saveLocalStatus(){
   try{ localStorage.setItem(STATUS_KEY, JSON.stringify({week:weekKey(),map:statusMap})); }catch(e){}
 }
-
-/* Sunucudan gelen sonuç kayıtlarını durum haritasına aktarır */
 function mergeServerStatus(r){
-  const lists=[r.results,r.records,r.maintenanceResults,r.weeklyResults,r.sonuclar]
-    .filter(x=>Array.isArray(x));
-  lists.forEach(list=>list.forEach(x=>{
-    const mid=x.machineId||x.makineId, tid=x.templateId||x.bakimId;
-    if(!mid||!tid) return;
-    if(x.weekKey && String(x.weekKey)!==weekKey() && String(x.weekKey).indexOf('W')>-1) return;
-    const res=String(x.result||x.sonuc||'').toLocaleUpperCase('tr');
-    statusMap[sKey(mid,tid)] = res.indexOf('RED')>-1 ? 'red' : 'tamamlanan';
-  }));
+  [r.results,r.records,r.maintenanceResults,r.weeklyResults,r.sonuclar]
+    .filter(x=>Array.isArray(x))
+    .forEach(list=>list.forEach(x=>{
+      const mid=x.machineId||x.makineId, tid=x.templateId||x.bakimId;
+      if(!mid||!tid) return;
+      if(x.weekKey && String(x.weekKey).indexOf('W')>-1 && String(x.weekKey)!==weekKey()) return;
+      const res=String(x.result||x.sonuc||'').toLocaleUpperCase('tr');
+      statusMap[sKey(mid,tid)] = res.indexOf('RED')>-1 ? 'red' : 'tamamlanan';
+    }));
   saveLocalStatus();
 }
+function statusOf(machineId,templateId){ return statusMap[sKey(machineId,templateId)] || 'bekleyen'; }
+function tasksOf(machineId){ return (byMachine[machineId]||[]).filter(x=>x.active).sort((a,b)=>(a.orderNo||1)-(b.orderNo||1)); }
 
-function statusOf(machineId,templateId){
-  return statusMap[sKey(machineId,templateId)] || 'bekleyen';
+/* ============ QR KÜTÜPHANESİ ============ */
+function loadScript(src){
+  return new Promise(ok=>{
+    const s=document.createElement('script');
+    s.src=src; s.async=true;
+    s.onload=()=>ok(true); s.onerror=()=>ok(false);
+    document.head.appendChild(s);
+  });
 }
-function tasksOf(machineId){
-  return (byMachine[machineId]||[]).filter(x=>x.active)
-    .sort((a,b)=>(a.orderNo||1)-(b.orderNo||1));
-}
-
-/* ---------- QR kütüphanesi gecikmeli yükleme ---------- */
 function loadQrLib(){
   if (window.Html5Qrcode) return Promise.resolve(true);
   if (qrLibPromise) return qrLibPromise;
-  qrLibPromise = new Promise(ok=>{
-    const s=document.createElement('script');
-    s.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
-    s.async=true; s.onload=()=>ok(true); s.onerror=()=>ok(false);
-    document.head.appendChild(s);
-  });
+  qrLibPromise = (async ()=>{
+    let ok = await loadScript('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
+    if(!ok || !window.Html5Qrcode){
+      ok = await loadScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
+    }
+    return Boolean(window.Html5Qrcode);
+  })();
   return qrLibPromise;
 }
 
+/* ============ QR DURUM / YARDIM ============ */
+function qrState(text, cls){
+  $('qrState').textContent = text || '';
+  $('qrState').className = 'qr-state ' + (cls||'');
+}
+function qrHelp(title, items){
+  if(!title){ $('qrHelp').classList.add('hide'); return; }
+  $('qrHelp').innerHTML = '<b>'+esc(title)+'</b><ul>'+items.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+  $('qrHelp').classList.remove('hide');
+}
+
+function isSecure(){
+  return window.isSecureContext ||
+         location.protocol==='https:' ||
+         location.hostname==='localhost' ||
+         location.hostname==='127.0.0.1';
+}
+
+/* ============ KAMERA ============ */
+function qrboxSize(){
+  const w = $('reader').clientWidth || 320;
+  const size = Math.max(160, Math.min(300, Math.floor(w * 0.72)));
+  return { width:size, height:size };
+}
+
+function pickBackCamera(list){
+  const arka = list.find(c=>/back|rear|arka|environment/i.test(c.label||''));
+  if(arka) return list.indexOf(arka);
+  return list.length>1 ? list.length-1 : 0;
+}
+
+async function hardResetReader(){
+  if(qr){
+    try{ if(qrRunning) await qr.stop(); }catch(e){}
+    try{ qr.clear(); }catch(e){}
+  }
+  qr=null; qrRunning=false;
+  $('reader').innerHTML='';
+}
+
+async function startCamera(useIndex){
+  /* 1. Güvenli bağlam denetimi */
+  if(!isSecure()){
+    qrState('Kamera açılamıyor: sayfa güvenli değil.', 'err');
+    qrHelp('Tarayıcı kamerayı yalnızca HTTPS adreslerde açar', [
+      'Şu anki adres: ' + location.protocol + '//' + location.host,
+      'Sayfayı https:// ile açın veya GitHub Pages / Google Sites gibi HTTPS bir yerde yayınlayın.',
+      'Dosyayı bilgisayardan çift tıklayarak (file:// ile) açtıysanız kamera hiçbir tarayıcıda çalışmaz.',
+      'Geçici çözüm: aşağıdaki Manuel Makine ID kutusunu kullanın.'
+    ]);
+    return;
+  }
+  /* 2. Tarayıcı desteği */
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    qrState('Bu tarayıcı kamerayı desteklemiyor.', 'err');
+    qrHelp('Desteklenen tarayıcı kullanın', [
+      'Android için Chrome, iPhone için Safari önerilir.',
+      'Uygulama içi tarayıcılarda (WhatsApp, Teams, Instagram) kamera engellenir.',
+      'Bağlantıyı kopyalayıp normal tarayıcıda açın.'
+    ]);
+    return;
+  }
+
+  $('camStart').disabled = true;
+  qrHelp(null);
+  qrState('Kamera kütüphanesi yükleniyor...');
+
+  const libOk = await loadQrLib();
+  if(!libOk){
+    $('camStart').disabled=false;
+    qrState('QR kütüphanesi yüklenemedi.', 'err');
+    qrHelp('İnternet erişimi engelleniyor olabilir', [
+      'Şirket ağı unpkg.com ve jsdelivr.net adreslerini engelliyor olabilir.',
+      'Mobil veriye geçip deneyin.',
+      'Kalıcı çözüm: html5-qrcode.min.js dosyasını proje klasörüne indirip yerel olarak kullanın.',
+      'Şimdilik Manuel Makine ID kutusunu kullanabilirsiniz.'
+    ]);
+    return;
+  }
+
+  await hardResetReader();
+  qrState('Kamera izni isteniyor...');
+
+  try{
+    /* 3. Kamera listesi */
+    if(!cameraList.length){
+      try{ cameraList = await Html5Qrcode.getCameras() || []; }catch(e){ cameraList=[]; }
+    }
+    if(cameraList.length){
+      cameraIndex = (useIndex===undefined) ? pickBackCamera(cameraList) : (useIndex % cameraList.length);
+    }
+
+    qr = new Html5Qrcode('reader', { verbose:false });
+    const config = {
+      fps: 10,
+      qrbox: qrboxSize(),
+      aspectRatio: 1.0,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+    };
+
+    /* 4. Önce arka kamera (facingMode), olmazsa deviceId */
+    let started = false;
+    if(useIndex===undefined){
+      try{
+        await qr.start({ facingMode:{ exact:'environment' } }, config, onScan, ()=>{});
+        started = true;
+      }catch(e){ /* alt yönteme geç */ }
+    }
+    if(!started && cameraList.length){
+      await qr.start({ deviceId:{ exact: cameraList[cameraIndex].id } }, config, onScan, ()=>{});
+      started = true;
+    }
+    if(!started){
+      await qr.start({ facingMode:'environment' }, config, onScan, ()=>{});
+      started = true;
+    }
+
+    qrRunning = true;
+    $('camStart').classList.add('hide');
+    $('camStop').classList.remove('hide');
+    if(cameraList.length>1) $('camSwitch').classList.remove('hide');
+    const ad = cameraList[cameraIndex] ? (cameraList[cameraIndex].label || 'Kamera') : 'Kamera';
+    qrState('Kamera açık: ' + ad + '. QR etiketini çerçeveye getirin.', 'ok');
+    qrHelp(null);
+
+  }catch(err){
+    qrRunning=false;
+    $('camStart').disabled=false;
+    $('camStart').classList.remove('hide');
+    handleCameraError(err);
+  }
+}
+
+function handleCameraError(err){
+  const name = (err && (err.name || err.type)) || '';
+  const text = String(err && (err.message || err) || '');
+
+  if(/NotAllowedError|Permission|izin/i.test(name+text)){
+    qrState('Kamera izni reddedildi.', 'err');
+    qrHelp('Kamera iznini açmanız gerekiyor', [
+      'Adres çubuğundaki kilit veya kamera simgesine dokunun.',
+      'Kamera iznini "İzin Ver" yapın ve sayfayı yenileyin.',
+      'Android Chrome: Ayarlar > Site ayarları > Kamera bölümünden bu siteyi kontrol edin.',
+      'iPhone: Ayarlar > Safari > Kamera > Sor veya İzin Ver.'
+    ]);
+    return;
+  }
+  if(/NotFoundError|DevicesNotFound|OverconstrainedError/i.test(name+text)){
+    qrState('Kamera bulunamadı.', 'err');
+    qrHelp('Cihazda uygun kamera algılanmadı', [
+      'Cihazda kamera olduğundan emin olun.',
+      'Kamerayı Değiştir düğmesiyle diğer kamerayı deneyin.',
+      'Harici kamera kullanıyorsanız bağlantısını kontrol edin.'
+    ]);
+    return;
+  }
+  if(/NotReadableError|TrackStartError|kullanımda/i.test(name+text)){
+    qrState('Kamera başka bir uygulama tarafından kullanılıyor.', 'err');
+    qrHelp('Kamerayı kullanan uygulamayı kapatın', [
+      'Teams, Zoom, WhatsApp veya kamera uygulaması açıksa kapatın.',
+      'Aynı sitenin diğer sekmelerini kapatın.',
+      'Kamerayı Başlat düğmesine yeniden basın.'
+    ]);
+    return;
+  }
+  qrState('Kamera açılamadı: ' + text, 'err');
+  qrHelp('Denenebilecek adımlar', [
+    'Kamerayı Başlat düğmesine tekrar basın.',
+    'Sayfayı yenileyip yeniden deneyin.',
+    'Kamerayı Değiştir düğmesini deneyin.',
+    'Çözülmezse Manuel Makine ID kutusunu kullanın.'
+  ]);
+}
+
+async function stopCamera(silent){
+  await hardResetReader();
+  $('camStart').disabled=false;
+  $('camStart').classList.remove('hide');
+  $('camStop').classList.add('hide');
+  $('camSwitch').classList.add('hide');
+  if(!silent) qrState('Kamera durduruldu.', '');
+}
+
+async function switchCamera(){
+  if(!cameraList.length) return;
+  const next = (cameraIndex + 1) % cameraList.length;
+  await stopCamera(true);
+  startCamera(next);
+}
+
+async function leaveQr(){
+  await stopCamera(true);
+  qrState(''); qrHelp(null);
+  step('machines');
+}
+
+/* QR okundu */
+function onScan(value){
+  if(!selectedMachine) return;
+  verify(value);
+}
+
+/* ============ VERİ ============ */
 function applyBootstrap(r){
   machineData = r.machines || [];
   byMachine = r.templatesByMachine || {};
@@ -151,7 +395,6 @@ async function init(){
     $('headerOperator').textContent = shortName(u.operator||u.name||u.fullName);
     $('loadTitle').textContent = (u.operator||u.name||'Operatör')+' için sistem yükleniyor';
     $('bar').style.width='35%'; $('percent').textContent='35%';
-
     const r = await CMMS.cachedCall('getWeeklyBootstrap', {}, {
       ttl: 300000,
       onFresh: fresh => { applyBootstrap(fresh); $('msg').textContent='Liste güncellendi.'; }
@@ -167,15 +410,13 @@ async function init(){
   }
 }
 
-/* ---------- Makine listesi: ad + numaralı durum barı ---------- */
 function render(){
   if(!filtered.length){ $('machineList').innerHTML='<div class="empty-state">Kayıt yok</div>'; return; }
   $('machineList').innerHTML = filtered.map(m=>{
     const list=tasksOf(m.id);
     const bar=list.map((t,i)=>{
       const st=statusOf(m.id,t.templateId);
-      const etiket=(i+1)+'. '+(t.task||'');
-      return `<span class="step ${st}" title="${esc(etiket)}">${i+1}</span>`;
+      return `<span class="step ${st}" title="${esc((i+1)+'. '+(t.task||''))}">${i+1}</span>`;
     }).join('');
     const bitti=list.filter(t=>statusOf(m.id,t.templateId)!=='bekleyen').length;
     return `<button class="machine-card" type="button" data-id="${esc(m.id)}">
@@ -197,18 +438,19 @@ async function selectMachine(id){
   selectedMachine = machineData.find(x=>x.id===id);
   $('qrName').textContent = selectedMachine.machineName;
   $('qrMsg').textContent=''; $('manual').value='';
+  qrState(''); qrHelp(null);
+  await hardResetReader();
+  $('camStart').disabled=false;
+  $('camStart').classList.remove('hide');
+  $('camStop').classList.add('hide');
+  $('camSwitch').classList.add('hide');
   step('qr');
-  const ok = await loadQrLib();
-  if(!ok) return $('qrMsg').textContent='QR kütüphanesi yüklenemedi, manuel ID kullanın.';
-  try{
-    qr = new Html5Qrcode('reader');
-    await qr.start({facingMode:'environment'},{fps:10,qrbox:230},verify,()=>{});
-  }catch(e){ $('qrMsg').textContent='Kamera açılamadı, manuel ID kullanın.'; }
+  /* Otomatik denenir; engellenirse kullanıcı düğmeye basar */
+  startCamera();
 }
 
 function key(v){ return String(v||'').toLocaleUpperCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]/g,''); }
 
-/* ---------- Bakım listesi: numaralar aynı renk kuralıyla ---------- */
 function renderTasks(){
   $('taskList').innerHTML = taskData.map((t,i)=>{
     const st=statusOf(selectedMachine.id,t.templateId);
@@ -220,13 +462,21 @@ function renderTasks(){
   document.querySelectorAll('#taskList .listBtn').forEach(b=>b.onclick=()=>openControl(b.dataset.id));
 }
 
+let verifyBusy=false;
 async function verify(v){
-  if(key(v)!==key(selectedMachine.id)) return $('qrMsg').textContent='Hatalı makine etiketi. Beklenen ID: '+selectedMachine.id;
-  await stopQr();
+  if(verifyBusy) return;
+  if(key(v)!==key(selectedMachine.id)){
+    $('qrMsg').textContent='Hatalı makine etiketi. Beklenen ID: '+selectedMachine.id;
+    return;
+  }
+  verifyBusy=true;
+  $('qrMsg').textContent='';
+  await stopCamera(true);
   taskData = tasksOf(selectedMachine.id);
   $('taskName').textContent = selectedMachine.machineName;
   renderTasks();
   step('tasks');
+  verifyBusy=false;
 }
 
 function openControl(id){
@@ -303,19 +553,26 @@ window.addEventListener('message',e=>{
   }
 });
 
-async function stopQr(){ if(qr) try{ await qr.stop(); qr.clear(); }catch(e){} qr=null; }
 function askMenu(){ $('menuConfirm').classList.remove('hide'); }
 function cancelMenu(){ $('menuConfirm').classList.add('hide'); }
-async function goMenu(){ cancelMenu(); await stopQr(); selectedMachine=null; selectedTask=null; taskData=[]; location.replace('index.html?screen=home'); }
-async function exit(){
+async function goMenu(){ cancelMenu(); await stopCamera(true); selectedMachine=null; selectedTask=null; taskData=[]; location.replace('index.html?screen=home'); }
+async function exitSystem(){
   if(!confirm(currentStep==='machines'?'Sistemden çıkmak istiyor musunuz?':'Çıkarsanız seçili makine kapanır ve tekrar QR okutmanız gerekir. Sistemden çıkılsın mı?')) return;
-  await stopQr(); sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.href='index.html';
+  await stopCamera(true); sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.href='index.html';
 }
 
-$('mainMenuBtn').onclick=askMenu; $('exitBtn').onclick=exit;
+/* Sekme arka plana alınınca kamerayı bırak (pil ve kilitlenme koruması) */
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && qrRunning) stopCamera(true); });
+window.addEventListener('pagehide', ()=>{ if(qrRunning) stopCamera(true); });
+
+$('camStart').onclick = ()=>startCamera();
+$('camStop').onclick  = ()=>stopCamera();
+$('camSwitch').onclick= switchCamera;
+$('mainMenuBtn').onclick=askMenu; $('exitBtn').onclick=exitSystem;
 $('cancelMenu').onclick=cancelMenu; $('confirmMenu').onclick=goMenu;
 $('search').oninput=e=>applyFilter(e.target.value);
 $('verify').onclick=()=>verify($('manual').value);
+$('manual').onkeydown=e=>{ if(e.key==='Enter') verify($('manual').value); };
 $('save').onclick=save; $('retry').onclick=init;
 $('mainMenuBtn').disabled=false;
 init();
