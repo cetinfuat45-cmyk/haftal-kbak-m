@@ -1,1 +1,323 @@
-<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OP V5.4.12</title><link rel="stylesheet" href="style.css"></head><body><header><img src="AKGLOG.png"><b>Operatör Haftalık Bakım</b></header><main><section class="card"><h1>Operatör ekranı</h1><p>Numaralı bakım barı, QR ve kontrol kayıt akışı mevcut çalışan V5.4.11 dosyanızdan korunmalıdır.</p></section></main></body></html>
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OP Paneli V5.4.14</title>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="dns-prefetch" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="https://unpkg.com">
+<link rel="stylesheet" href="style.css">
+<style>
+/* ===== V5.4.14 Makine kartı ve durum barı ===== */
+.machine-card{display:block;width:100%;text-align:left;background:#fff;color:#172033;border:1px solid #dce5ef;border-radius:12px;padding:14px 16px;margin:10px 0;cursor:pointer;font:inherit}
+.machine-card:hover{border-color:#0f4c81;box-shadow:0 4px 14px #0f172a18}
+.machine-card .mc-name{display:block;font-size:17px;font-weight:800;color:#0f2d4d;margin-bottom:10px;line-height:1.25}
+.step-bar{display:flex;flex-wrap:wrap;gap:6px}
+.step{display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:9px;font-weight:900;font-size:15px;color:#1b2430;border:1px solid #00000022;line-height:1}
+.step.bekleyen{background:#FFB733}
+.step.tamamlanan{background:#99FF99}
+.step.red{background:#FF9999}
+.step-legend{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:4px 0 14px;font-size:13px;color:#475569}
+.step-legend span{display:flex;align-items:center;gap:6px}
+.step-legend i{width:16px;height:16px;border-radius:5px;border:1px solid #00000022;display:inline-block}
+.mc-progress{display:block;margin-top:9px;font-size:12px;color:#64748b;font-weight:700}
+#taskList .listBtn{display:flex;flex-direction:row;align-items:center;gap:12px}
+.task-no{display:grid;place-items:center;min-width:34px;height:34px;border-radius:9px;font-weight:900;color:#1b2430;border:1px solid #00000022;flex:none}
+.task-no.bekleyen{background:#FFB733}
+.task-no.tamamlanan{background:#99FF99}
+.task-no.red{background:#FF9999}
+.task-text{display:flex;flex-direction:column;min-width:0}
+.task-text b{font-size:15px}
+.task-text small{color:#64748b}
+@media(max-width:600px){.step{min-width:31px;height:31px;font-size:14px}.machine-card .mc-name{font-size:16px}}
+</style>
+</head>
+<body>
+<header class="op-header"><div class="op-identity"><img src="AKGLOG.png" alt="AKG"><strong id="headerOperator">OPERATÖR</strong></div><nav class="op-menu"><button id="mainMenuBtn" class="icon-button" type="button" title="Ana Menü" aria-label="Ana Menü"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></button><button id="exitBtn" class="icon-button exit-button" type="button" title="Çıkış" aria-label="Çıkış"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5v-2H7V6h3zm8.6 7-3.3-3.3 1.4-1.4L22.4 12l-5.7 5.7-1.4-1.4 3.3-3.3H10v-2z"/></svg></button></nav></header>
+<main>
+<section id="machines" class="card">
+  <h1>Bakımı Yapılacak Makineler</h1>
+  <input id="search" placeholder="Makine adı ile ara">
+  <div class="step-legend">
+    <span><i style="background:#FFB733"></i>Bekleyen</span>
+    <span><i style="background:#99FF99"></i>Tamamlanan</span>
+    <span><i style="background:#FF9999"></i>Red</span>
+  </div>
+  <div id="machineList"></div>
+  <div id="msg"></div>
+</section>
+<section id="qr" class="card hide"><button onclick="step('machines')">← Geri</button><h2 id="qrName"></h2><div id="reader"></div><input id="manual" placeholder="Manuel Makine ID"><button id="verify">Doğrula</button><div id="qrMsg"></div></section>
+<section id="tasks" class="card hide"><button onclick="step('machines')">← Makineler</button><h2 id="taskName"></h2><div id="taskList"></div></section>
+<section id="control" class="card hide"><button onclick="step('tasks')">← Bakımlar</button><h2 id="controlName"></h2><img id="ref" class="reference hide" loading="lazy" decoding="async"><p><b>İstenen:</b> <span id="target"></span></p><select id="result"><option value="">Sonuç seçin</option><option>UYGUN</option><option>RED</option></select><textarea id="desc" placeholder="Açıklama"></textarea><input id="proof" type="file" accept="image/*" capture="environment"><button id="save">Kontrolü Kaydet</button><div id="saveMsg"></div></section>
+</main>
+<div id="menuConfirm" class="confirm-overlay hide"><div class="confirm-card"><h2>Ana menüye dönülsün mü?</h2><p>Bu ekrandan ayrılırsanız makineyi yeniden seçmeniz ve QR kodunu tekrar okutmanız gerekir.</p><div class="confirm-actions"><button id="cancelMenu" class="secondary">Vazgeç</button><button id="confirmMenu">Ana Menüye Dön</button></div></div></div>
+<div id="loader" class="overlay"><div class="modal"><img src="AKGLOG.png"><h2 id="loadTitle">Sistem yükleniyor</h2><p id="loadText">Kullanıcı bilgileri hazırlanıyor...</p><div class="track"><div id="bar"></div></div><b id="percent">0%</b><button id="retry" class="hide">Tekrar Dene</button></div></div>
+<iframe name="postFrame" class="hide"></iframe>
+<form id="postForm" target="postFrame" method="post" class="hide"><input name="action" value="saveMaintenanceResultWithImage"><input name="payload" id="payload"><input name="imageBase64" id="base64"><input name="imageName" id="imageName"><input name="imageType" id="imageType"></form>
+
+<script src="net.js"></script>
+<script>
+'use strict';
+/* Operatör Paneli V5.4.14
+   - Makine kartında yalnızca makine adı görünür (ID gizli).
+   - Bakımlar 1, 2, 3 ... şeklinde renkli bar olarak gösterilir.
+   - Bekleyen #FFB733 | Tamamlanan #99FF99 | Red #FF9999
+*/
+const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
+const STATUS_KEY = 'cmmsDurum_V5414';
+let machineData = [], filtered = [], byMachine = {}, selectedMachine = null,
+    taskData = [], selectedTask = null, qr = null, pending = null,
+    pendingTimer = null, currentStep = 'machines', qrLibPromise = null,
+    statusMap = {};
+
+function step(id){ currentStep=id; ['machines','qr','tasks','control'].forEach(x=>$(x).classList.toggle('hide',x!==id)); $('mainMenuBtn').disabled=false; }
+function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function getSessionUser(){ for(const k of [SESSION,'haftalikBakimV530User','cmmsUser']) try{ const u=JSON.parse(sessionStorage.getItem(k)||'null'); if(u&&(u.operator||u.name||u.fullName)) return u; }catch(e){} return {}; }
+function shortName(n){ const p=String(n||'').trim().split(/\s+/).filter(Boolean); return !p.length?'OPERATÖR':p.length===1?p[0].toLocaleUpperCase('tr'):(p[0][0]+'.'+p.at(-1)).toLocaleUpperCase('tr'); }
+
+/* ---------- Hafta anahtarı ---------- */
+function weekKey(){
+  const d=new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+4-(d.getDay()||7));
+  const y0=new Date(d.getFullYear(),0,1);
+  const w=Math.ceil((((d-y0)/86400000)+1)/7);
+  return d.getFullYear()+'-W'+String(w).padStart(2,'0');
+}
+
+/* ---------- Durum yönetimi ---------- */
+function sKey(machineId,templateId){ return machineId+'||'+templateId; }
+
+function loadLocalStatus(){
+  try{
+    const box=JSON.parse(localStorage.getItem(STATUS_KEY)||'null');
+    if(box && box.week===weekKey() && box.map) return box.map;
+  }catch(e){}
+  return {};
+}
+function saveLocalStatus(){
+  try{ localStorage.setItem(STATUS_KEY, JSON.stringify({week:weekKey(),map:statusMap})); }catch(e){}
+}
+
+/* Sunucudan gelen sonuç kayıtlarını durum haritasına aktarır */
+function mergeServerStatus(r){
+  const lists=[r.results,r.records,r.maintenanceResults,r.weeklyResults,r.sonuclar]
+    .filter(x=>Array.isArray(x));
+  lists.forEach(list=>list.forEach(x=>{
+    const mid=x.machineId||x.makineId, tid=x.templateId||x.bakimId;
+    if(!mid||!tid) return;
+    if(x.weekKey && String(x.weekKey)!==weekKey() && String(x.weekKey).indexOf('W')>-1) return;
+    const res=String(x.result||x.sonuc||'').toLocaleUpperCase('tr');
+    statusMap[sKey(mid,tid)] = res.indexOf('RED')>-1 ? 'red' : 'tamamlanan';
+  }));
+  saveLocalStatus();
+}
+
+function statusOf(machineId,templateId){
+  return statusMap[sKey(machineId,templateId)] || 'bekleyen';
+}
+function tasksOf(machineId){
+  return (byMachine[machineId]||[]).filter(x=>x.active)
+    .sort((a,b)=>(a.orderNo||1)-(b.orderNo||1));
+}
+
+/* ---------- QR kütüphanesi gecikmeli yükleme ---------- */
+function loadQrLib(){
+  if (window.Html5Qrcode) return Promise.resolve(true);
+  if (qrLibPromise) return qrLibPromise;
+  qrLibPromise = new Promise(ok=>{
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+    s.async=true; s.onload=()=>ok(true); s.onerror=()=>ok(false);
+    document.head.appendChild(s);
+  });
+  return qrLibPromise;
+}
+
+function applyBootstrap(r){
+  machineData = r.machines || [];
+  byMachine = r.templatesByMachine || {};
+  mergeServerStatus(r);
+  applyFilter($('search').value||'');
+}
+
+async function init(){
+  $('retry').classList.add('hide');
+  statusMap = loadLocalStatus();
+  try{
+    const u = getSessionUser();
+    $('headerOperator').textContent = shortName(u.operator||u.name||u.fullName);
+    $('loadTitle').textContent = (u.operator||u.name||'Operatör')+' için sistem yükleniyor';
+    $('bar').style.width='35%'; $('percent').textContent='35%';
+
+    const r = await CMMS.cachedCall('getWeeklyBootstrap', {}, {
+      ttl: 300000,
+      onFresh: fresh => { applyBootstrap(fresh); $('msg').textContent='Liste güncellendi.'; }
+    });
+    if(!r.success) throw Error(r.message);
+    applyBootstrap(r);
+    $('bar').style.width='100%'; $('percent').textContent='100%';
+    $('loader').classList.add('hide');
+    loadQrLib();
+  }catch(e){
+    $('loadText').textContent=e.message;
+    $('retry').classList.remove('hide');
+  }
+}
+
+/* ---------- Makine listesi: ad + numaralı durum barı ---------- */
+function render(){
+  if(!filtered.length){ $('machineList').innerHTML='<div class="empty-state">Kayıt yok</div>'; return; }
+  $('machineList').innerHTML = filtered.map(m=>{
+    const list=tasksOf(m.id);
+    const bar=list.map((t,i)=>{
+      const st=statusOf(m.id,t.templateId);
+      const etiket=(i+1)+'. '+(t.task||'');
+      return `<span class="step ${st}" title="${esc(etiket)}">${i+1}</span>`;
+    }).join('');
+    const bitti=list.filter(t=>statusOf(m.id,t.templateId)!=='bekleyen').length;
+    return `<button class="machine-card" type="button" data-id="${esc(m.id)}">
+      <span class="mc-name">${esc(m.machineName)}</span>
+      <span class="step-bar">${bar||'<span class="mc-progress">Tanımlı bakım yok</span>'}</span>
+      ${list.length?`<span class="mc-progress">${bitti} / ${list.length} bakım tamamlandı</span>`:''}
+    </button>`;
+  }).join('');
+  document.querySelectorAll('.machine-card').forEach(b=>b.onclick=()=>selectMachine(b.dataset.id));
+}
+
+function applyFilter(q){
+  q=String(q||'').toLocaleLowerCase('tr');
+  filtered = q ? machineData.filter(x=>String(x.machineName||'').toLocaleLowerCase('tr').includes(q)) : machineData;
+  render();
+}
+
+async function selectMachine(id){
+  selectedMachine = machineData.find(x=>x.id===id);
+  $('qrName').textContent = selectedMachine.machineName;
+  $('qrMsg').textContent=''; $('manual').value='';
+  step('qr');
+  const ok = await loadQrLib();
+  if(!ok) return $('qrMsg').textContent='QR kütüphanesi yüklenemedi, manuel ID kullanın.';
+  try{
+    qr = new Html5Qrcode('reader');
+    await qr.start({facingMode:'environment'},{fps:10,qrbox:230},verify,()=>{});
+  }catch(e){ $('qrMsg').textContent='Kamera açılamadı, manuel ID kullanın.'; }
+}
+
+function key(v){ return String(v||'').toLocaleUpperCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]/g,''); }
+
+/* ---------- Bakım listesi: numaralar aynı renk kuralıyla ---------- */
+function renderTasks(){
+  $('taskList').innerHTML = taskData.map((t,i)=>{
+    const st=statusOf(selectedMachine.id,t.templateId);
+    return `<button class="listBtn" data-id="${esc(t.templateId)}">
+      <span class="task-no ${st}">${i+1}</span>
+      <span class="task-text"><b>${esc(t.task)}</b><small>${esc(t.region)} / ${esc(t.system)}</small></span>
+    </button>`;
+  }).join('')||'<div class="empty-state">Bu makine için tanımlı bakım yok.</div>';
+  document.querySelectorAll('#taskList .listBtn').forEach(b=>b.onclick=()=>openControl(b.dataset.id));
+}
+
+async function verify(v){
+  if(key(v)!==key(selectedMachine.id)) return $('qrMsg').textContent='Hatalı makine etiketi. Beklenen ID: '+selectedMachine.id;
+  await stopQr();
+  taskData = tasksOf(selectedMachine.id);
+  $('taskName').textContent = selectedMachine.machineName;
+  renderTasks();
+  step('tasks');
+}
+
+function openControl(id){
+  selectedTask = taskData.find(x=>x.templateId===id);
+  $('controlName').textContent = selectedTask.task;
+  $('target').textContent = selectedTask.targetValue||'-';
+  if(selectedTask.referenceImageUrl){ $('ref').src=selectedTask.referenceImageUrl; $('ref').classList.remove('hide'); }
+  else $('ref').classList.add('hide');
+  $('result').value=''; $('desc').value=''; $('proof').value=''; $('saveMsg').textContent='';
+  step('control');
+}
+
+function compress(f){
+  return new Promise((ok,no)=>{
+    if(!f) return ok('');
+    const reader=new FileReader(), img=new Image();
+    reader.onerror=no;
+    reader.onload=e=>{ img.src=e.target.result; };
+    img.onerror=()=>{ ok(String(reader.result).split(',')[1]); };
+    img.onload=()=>{
+      try{
+        const max=1400, scale=Math.min(1,max/Math.max(img.width,img.height));
+        const c=document.createElement('canvas');
+        c.width=Math.round(img.width*scale); c.height=Math.round(img.height*scale);
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        ok(c.toDataURL('image/jpeg',0.72).split(',')[1]);
+      }catch(err){ ok(String(reader.result).split(',')[1]); }
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function unlockSave(text){
+  clearTimeout(pendingTimer); pendingTimer=null; pending=null;
+  $('save').disabled=false; $('save').textContent='Kontrolü Kaydet';
+  if(text) $('saveMsg').textContent=text;
+}
+
+async function save(){
+  if(pending) return;
+  const result=$('result').value, file=$('proof').files[0];
+  if(!result) return $('saveMsg').textContent='Sonuç seçin.';
+  if(selectedTask.photoRequired && !file) return $('saveMsg').textContent='Kanıt fotoğrafı zorunlu.';
+  const req='REQ-'+Date.now(), u=getSessionUser();
+  pending={req,machineId:selectedMachine.id,templateId:selectedTask.templateId,result};
+  $('save').disabled=true; $('save').textContent='Kaydediliyor...';
+  $('saveMsg').textContent='Fotoğraf hazırlanıyor...';
+  try{
+    const b64 = await compress(file);
+    $('saveMsg').textContent='Gönderiliyor...';
+    $('postForm').action=CMMS.API_URL;
+    $('payload').value=JSON.stringify({clientRequestId:req,templateId:selectedTask.templateId,machineId:selectedMachine.id,machineName:selectedMachine.machineName,operator:u.operator||'',result,description:$('desc').value,weekKey:new Date().toISOString().slice(0,10)});
+    $('base64').value=b64;
+    $('imageName').value=file?file.name.replace(/[^a-zA-Z0-9._-]/g,'_'):'';
+    $('imageType').value=file?'image/jpeg':'';
+    $('postForm').submit();
+    pendingTimer=setTimeout(()=>{ if(pending) unlockSave('Kayıt yanıtı alınamadı. Lütfen tekrar deneyin.'); },25000);
+  }catch(error){ unlockSave(error.message); }
+}
+
+function done(r){
+  if(pending){
+    statusMap[sKey(pending.machineId,pending.templateId)] =
+      String(pending.result).toLocaleUpperCase('tr').indexOf('RED')>-1 ? 'red' : 'tamamlanan';
+    saveLocalStatus();
+  }
+  unlockSave('✅ Kontrol kaydedildi - '+(r.recordId||''));
+  renderTasks(); render();
+  setTimeout(()=>step('tasks'),700);
+}
+window.addEventListener('message',e=>{
+  if(e.data && e.data.source==='CMMS_APPS_SCRIPT_RESULT'){
+    e.data.success ? done(e.data) : unlockSave(e.data.message);
+  }
+});
+
+async function stopQr(){ if(qr) try{ await qr.stop(); qr.clear(); }catch(e){} qr=null; }
+function askMenu(){ $('menuConfirm').classList.remove('hide'); }
+function cancelMenu(){ $('menuConfirm').classList.add('hide'); }
+async function goMenu(){ cancelMenu(); await stopQr(); selectedMachine=null; selectedTask=null; taskData=[]; location.replace('index.html?screen=home'); }
+async function exit(){
+  if(!confirm(currentStep==='machines'?'Sistemden çıkmak istiyor musunuz?':'Çıkarsanız seçili makine kapanır ve tekrar QR okutmanız gerekir. Sistemden çıkılsın mı?')) return;
+  await stopQr(); sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.href='index.html';
+}
+
+$('mainMenuBtn').onclick=askMenu; $('exitBtn').onclick=exit;
+$('cancelMenu').onclick=cancelMenu; $('confirmMenu').onclick=goMenu;
+$('search').oninput=e=>applyFilter(e.target.value);
+$('verify').onclick=()=>verify($('manual').value);
+$('save').onclick=save; $('retry').onclick=init;
+$('mainMenuBtn').disabled=false;
+init();
+</script>
+</body></html>
