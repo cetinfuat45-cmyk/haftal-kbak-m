@@ -1,5 +1,5 @@
 'use strict';
-/* Haftalık Bakım CMMS - Giriş Ekranı - V5.4.16 */
+/* Haftalık Bakım CMMS - Giriş Ekranı - V5.4.18 */
 const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
 
 function loading(p, t, n = '') {
@@ -43,6 +43,7 @@ async function login() {
     $('loader').classList.add('hide'); $('msg').textContent = e.message;
   } finally { $('loginBtn').disabled = false; }
 }
+
 $('loginBtn').onclick = login;
 $('password').onkeydown = e => { if (e.key === 'Enter') login(); };
 $('testBtn').onclick = async () => {
@@ -56,8 +57,6 @@ $('testBtn').onclick = async () => {
 $('opBtn').onclick = () => location.href = 'weekly-maintenance.html';
 $('adminBtn').onclick = () => location.href = 'admin-maintenance.html';
 $('logout').onclick = () => { sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.reload(); };
-$('opBtn').onmouseenter = () => CMMS.cachedCall('getWeeklyBootstrap', {}, { ttl: 300000 }).catch(() => {});
-$('adminBtn').onmouseenter = () => CMMS.cachedCall('listMachinesCached', {}, { ttl: 900000 }).catch(() => {});
 
 function showHomeFromSession() {
   const params = new URLSearchParams(location.search);

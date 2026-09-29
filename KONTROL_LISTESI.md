@@ -1,36 +1,51 @@
-# V5.4.16 Kontrol Listesi
+# V5.4.18 Kontrol Listesi
 
-## QR doğrulama (ana düzeltme)
-- [ ] HAAS CNC VF4 / 2 makinesi seçilip kendi etiketi okutulunca bakım listesi açılıyor.
-- [ ] Etiketteki TOPLAM MAKİNE KODU kabul ediliyor.
-- [ ] Başka makinenin etiketi okutulunca modal açılıyor.
-- [ ] Modalda seçilen makine ve okunan etiket karşılaştırmalı görünüyor.
-- [ ] Etiket başka bir makineye aitse o makinenin adı yazıyor.
-- [ ] Tanımsız etiket okutulunca kontrol listesi görünüyor.
+## Android ekran taşma (bu sürümün konusu)
+- [ ] Uzun ve boşluksuz bakım adı olan satırda metin alt satıra iniyor.
+- [ ] Sayfa yatayda kaymıyor, sağa sola sürüklenmiyor.
+- [ ] Sol taraftaki numaralar tam görünüyor.
+- [ ] Makine adı başlığı kesilmiyor.
+- [ ] Geri düğmesi ekrana sığıyor.
+- [ ] Makine kartındaki numaralar alt satıra iniyor, taşmıyor.
+- [ ] Form alanlarına dokununca ekran yakınlaşıp kaymıyor.
+- [ ] QR modalı küçük ekranda tam sığıyor.
+- [ ] 360 piksel genişliğindeki telefonda da düzgün.
+- [ ] Yatay çevirince de taşma yok.
 
-## Manuel giriş kaldırıldı
-- [ ] QR ekranında Manuel Makine ID kutusu YOK.
-- [ ] Doğrula düğmesi YOK.
-- [ ] QR okutmadan bakım ekranına geçmek mümkün değil.
-
-## Modal davranışı
-- [ ] Hata modalı tam ekran açılıyor.
-- [ ] Tekrar Okut kamerayı yeniden başlatıyor.
-- [ ] Makine Listesine Dön makine listesine götürüyor.
-- [ ] Modal açıkken kamera duruyor.
-- [ ] Aynı hatalı etiket üst üste okunsa da modal bir kez açılıyor.
-
-## Kamera hata modalları
-- [ ] HTTPS değilse uyarı modalı ve adres görünüyor.
-- [ ] İzin reddedilince izin açma adımları görünüyor.
-- [ ] Kamera meşgulse ilgili modal çıkıyor.
-- [ ] Kütüphane yüklenemezse modal çıkıyor.
-
-## Operatör makine ekranı (korundu)
-- [ ] Makine kartında yalnızca makine adı görünüyor.
+## Operatör paneli
+- [ ] Makine listesi yükleniyor.
+- [ ] Sadece makine adı görünüyor, ID görünmüyor.
 - [ ] Bakımlar numaralı renkli bar olarak görünüyor.
 - [ ] Bekleyen turuncu, tamamlanan yeşil, red kırmızı.
+- [ ] "x / y bakım tamamlandı" sayacı doğru.
+- [ ] Arama kutusu çalışıyor.
 
-## Bağlantı (korundu)
+## QR akışı
+- [ ] Makine seçilince kamera açılıyor.
+- [ ] Doğru etiket okununca bakım listesi açılıyor.
+- [ ] Yanlış etiket okununca modal açılıyor.
+- [ ] Modalda karşılaştırma görünüyor.
+- [ ] Etiket başka makineye aitse o makine bildiriliyor.
+- [ ] Manuel giriş kutusu YOK.
+- [ ] HTTPS değilse uyarı modalı çıkıyor.
+
+## Kayıt
+- [ ] UYGUN kaydedilince numara yeşile dönüyor.
+- [ ] RED kaydedilince numara kırmızıya dönüyor.
+- [ ] Makine listesine dönüldüğünde renk güncel.
+- [ ] Sayfa yenilenince renkler korunuyor.
+- [ ] Fotoğraf yükleme çalışıyor.
+
+## Admin paneli
+- [ ] Yönetici olmayan kullanıcı bu sayfayı açamıyor.
+- [ ] Makine ve bakım listesi aynı anda yükleniyor.
+- [ ] Yeni bakım tanımı kaydediliyor.
+- [ ] Düzenleme çalışıyor.
+- [ ] Silme onay soruyor ve çalışıyor.
+- [ ] Listeyi Yenile taze veri getiriyor.
+- [ ] Uzun bakım adları taşmıyor.
+
+## Bağlantı
 - [ ] Bağlantıyı Test Et milisaniye gösteriyor.
 - [ ] İkinci açılışta liste anında geliyor.
+- [ ] Bağlantı yoksa 12 saniyede hata veriyor.

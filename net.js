@@ -1,10 +1,10 @@
 'use strict';
 /* =====================================================================
    Haftalık Bakım CMMS - Ortak Bağlantı Katmanı
-   Sürüm: V5.4.16
+   Sürüm: V5.4.18
    ===================================================================== */
 const CMMS = (function () {
-  const VERSION = 'V5.4.16';
+  const VERSION = 'V5.4.18';
   const API_URL = 'https://script.google.com/macros/s/AKfycbwjECihD-JQg6ITpewj4ga3HzMraB4sUNhrCf40l6Fjlf2EOhIY9oMknFHAnG_XTCPP/exec';
   const SESSION = 'haftalikBakimV544User';
   const TIMEOUT_MS = 12000, RETRY_COUNT = 1;
@@ -31,6 +31,7 @@ const CMMS = (function () {
       document.head.appendChild(s);
     });
   }
+
   function call(action, params, options) {
     params = params || {}; options = options || {};
     const key = action + '|' + JSON.stringify(params);
@@ -45,6 +46,7 @@ const CMMS = (function () {
     const p = run(retries).finally(function () { inflight.delete(key); });
     inflight.set(key, p); return p;
   }
+
   function cacheRead(name, ttlMs) {
     try {
       const raw = localStorage.getItem(CACHE_PREFIX + name);
@@ -54,15 +56,18 @@ const CMMS = (function () {
       return { data: box.d, age: Date.now() - box.t, fresh: (Date.now() - box.t) < ttlMs };
     } catch (e) { return null; }
   }
+
   function cacheWrite(name, data) {
     try { localStorage.setItem(CACHE_PREFIX + name, JSON.stringify({ t: Date.now(), d: data })); } catch (e) {}
   }
+
   function cacheClear() {
     try {
       Object.keys(localStorage).filter(function (k) { return k.indexOf('cmmsCache_') === 0; })
         .forEach(function (k) { localStorage.removeItem(k); });
     } catch (e) {}
   }
+
   function cachedCall(action, params, opt) {
     opt = opt || {};
     const name = opt.name || action, ttl = opt.ttl || 300000;
@@ -78,6 +83,7 @@ const CMMS = (function () {
     }
     return network;
   }
+
   let warmed = false;
   function warmUp() { if (warmed) return; warmed = true; call('health', {}, { retries: 0, timeout: 8000 }).catch(function () {}); }
 

@@ -2,14 +2,14 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Haftalık Bakım CMMS V5.4.16</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Haftalık Bakım CMMS V5.4.18</title>
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="dns-prefetch" href="https://script.google.com">
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
-  <link rel="preload" href="style.css" as="style">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobil-tasma-duzeltme.css">
   <link rel="preload" href="AKGLOG.png" as="image">
   <link rel="prefetch" href="weekly-maintenance.html">
   <link rel="prefetch" href="admin-maintenance.html">
@@ -17,7 +17,7 @@
 <body>
 <header><img src="AKGLOG.png" alt="AKG"><b>Haftalık Bakım CMMS</b><button id="logout" class="hide">Çıkış</button></header>
 <main>
-<section id="login" class="card"><img class="logo" src="AKGLOG.png" alt="AKG"><h1>Şifre Girişi</h1><p>Kullanıcılar Google E-Tablo içindeki <b>veri</b> sayfasından doğrulanır.</p><input id="password" type="password" inputmode="numeric" placeholder="Şifre" autocomplete="current-password"><button id="loginBtn">Giriş Yap</button><button id="testBtn" class="secondary">Bağlantıyı Test Et</button><div id="msg"></div><pre id="debug"></pre></section>
+<section id="login" class="card"><img class="logo" src="AKGLOG.png" alt="AKG"><h1>Şifre Girişi</h1><p class="muted">Kullanıcılar Google E-Tablo içindeki <b>veri</b> sayfasından doğrulanır.</p><input id="password" type="password" inputmode="numeric" placeholder="Şifre" autocomplete="current-password"><button id="loginBtn">Giriş Yap</button><button id="testBtn" class="secondary">Bağlantıyı Test Et</button><div id="msg"></div><pre id="debug"></pre></section>
 <section id="home" class="card hide"><h2 id="welcome"></h2><button id="opBtn">Operatör Bakım Paneli</button><button id="adminBtn" class="secondary">Admin Paneli</button></section>
 </main>
 <div id="loader" class="overlay hide"><div class="modal"><img src="AKGLOG.png" alt="Yükleniyor"><h2 id="loadTitle">Sistem yükleniyor</h2><p id="loadText">Hazırlanıyor...</p><div class="track"><div id="bar"></div></div><b id="percent">0%</b></div></div>
