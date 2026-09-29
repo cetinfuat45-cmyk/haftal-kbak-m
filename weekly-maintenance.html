@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>OP Paneli V5.4.18</title>
+<title>OP Paneli V5.4.19</title>
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="dns-prefetch" href="https://script.google.com">
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
@@ -35,6 +35,15 @@
 .task-text b{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
 .task-text small{color:#64748b;line-height:1.3;overflow-wrap:anywhere}
 
+/* ===== RED açıklama zorunluluğu ===== */
+#descLabel{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#descZorunlu{display:none;padding:2px 9px;border-radius:99px;background:#FF9999;color:#7a1414;font-size:11px;font-weight:900;letter-spacing:.4px}
+#descZorunlu.goster{display:inline-block}
+#desc.eksik{border-color:#b11f2e;box-shadow:0 0 0 3px #b11f2e22}
+.red-uyari{display:none;margin-top:8px;padding:11px 13px;background:#fff1f1;border:1px solid #ffc9c9;border-radius:10px;font-size:13px;color:#7a1414;line-height:1.45}
+.red-uyari.goster{display:block}
+.sayac{font-size:12px;color:#64748b;text-align:right;margin-top:-4px}
+
 /* ===== QR kamera alanı ===== */
 #reader{width:100%;max-width:420px;min-height:260px;margin:12px auto;background:#0b1626;border-radius:14px;overflow:hidden;display:grid;place-items:center}
 #reader video{width:100%!important;height:auto!important;display:block;object-fit:cover}
@@ -52,7 +61,6 @@
 .qr-modal-icon{display:grid;place-items:center;width:78px;height:78px;margin:0 auto 14px;border-radius:50%;font-size:40px;font-weight:900;line-height:1}
 .qr-modal-icon.err{background:#FF9999;color:#7a1414}
 .qr-modal-icon.warn{background:#FFB733;color:#6b3b00}
-.qr-modal-icon.ok{background:#99FF99;color:#0d5c2c}
 .qr-modal-card h2{margin:0 0 10px;font-size:21px;color:#12243a}
 .qr-modal-card p{margin:7px 0;color:#42536b;font-size:15px;line-height:1.45;overflow-wrap:anywhere}
 .qr-compare{margin:15px 0;text-align:left;background:#f4f7fb;border-radius:12px;padding:13px 15px;font-size:13px}
@@ -100,7 +108,33 @@
 
 <section id="tasks" class="card hide"><button onclick="step('machines')">← Makineler</button><h2 id="taskName"></h2><div id="taskList"></div></section>
 
-<section id="control" class="card hide"><button onclick="step('tasks')">← Bakımlar</button><h2 id="controlName"></h2><img id="ref" class="reference hide" loading="lazy" decoding="async" alt="Referans"><p><b>İstenen:</b> <span id="target"></span></p><select id="result"><option value="">Sonuç seçin</option><option>UYGUN</option><option>RED</option></select><textarea id="desc" placeholder="Açıklama"></textarea><input id="proof" type="file" accept="image/*" capture="environment"><button id="save">Kontrolü Kaydet</button><div id="saveMsg"></div></section>
+<section id="control" class="card hide">
+  <button onclick="step('tasks')">← Bakımlar</button>
+  <h2 id="controlName"></h2>
+  <img id="ref" class="reference hide" loading="lazy" decoding="async" alt="Referans">
+  <p><b>İstenen:</b> <span id="target"></span></p>
+
+  <label for="result">Sonuç</label>
+  <select id="result">
+    <option value="">Sonuç seçin</option>
+    <option>UYGUN</option>
+    <option>RED</option>
+  </select>
+
+  <label id="descLabel" for="desc">Açıklama <span id="descZorunlu">ZORUNLU</span></label>
+  <textarea id="desc" placeholder="Açıklama"></textarea>
+  <div id="descSayac" class="sayac"></div>
+  <div id="redUyari" class="red-uyari">
+    <b>RED verdiniz.</b> Arızanın ne olduğunu en az 10 karakterle açıklayın.
+    Bu açıklama ana menüdeki <b>RED Verilen Bakımlar</b> ekranında görüntülenecektir.
+  </div>
+
+  <label for="proof">Kanıt Fotoğrafı</label>
+  <input id="proof" type="file" accept="image/*" capture="environment">
+
+  <button id="save">Kontrolü Kaydet</button>
+  <div id="saveMsg"></div>
+</section>
 </main>
 
 <div id="qrModal" class="qr-modal hide"><div class="qr-modal-card">
@@ -121,9 +155,13 @@
 <script src="net.js"></script>
 <script>
 'use strict';
-/* Operatör Paneli V5.4.18 */
+/* Operatör Paneli V5.4.19
+   YENİ: RED seçildiğinde açıklama zorunludur (en az 10 karakter).
+*/
 const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
-const STATUS_KEY = 'cmmsDurum_V5418';
+const STATUS_KEY = 'cmmsDurum_V5419';
+const RED_MIN = 10;   /* RED açıklaması için en az karakter sayısı */
+
 let machineData = [], filtered = [], byMachine = {}, selectedMachine = null,
     taskData = [], selectedTask = null, pending = null,
     pendingTimer = null, currentStep = 'machines', qrLibPromise = null,
@@ -134,15 +172,9 @@ function step(id){ currentStep=id; ['machines','qr','tasks','control'].forEach(x
 function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function getSessionUser(){ for(const k of [SESSION,'haftalikBakimV530User','cmmsUser']) try{ const u=JSON.parse(sessionStorage.getItem(k)||'null'); if(u&&(u.operator||u.name||u.fullName)) return u; }catch(e){} return {}; }
 function shortName(n){ const p=String(n||'').trim().split(/\s+/).filter(Boolean); return !p.length?'OPERATÖR':p.length===1?p[0].toLocaleUpperCase('tr'):(p[0][0]+'.'+p.at(-1)).toLocaleUpperCase('tr'); }
+function weekKey(){ return CMMS.weekKey(); }
 
-function weekKey(){
-  const d=new Date(); d.setHours(0,0,0,0);
-  d.setDate(d.getDate()+4-(d.getDay()||7));
-  const y0=new Date(d.getFullYear(),0,1);
-  const w=Math.ceil((((d-y0)/86400000)+1)/7);
-  return d.getFullYear()+'-W'+String(w).padStart(2,'0');
-}
-
+/* ---------- Durum yönetimi ---------- */
 function sKey(machineId,templateId){ return machineId+'||'+templateId; }
 function loadLocalStatus(){
   try{ const box=JSON.parse(localStorage.getItem(STATUS_KEY)||'null');
@@ -169,8 +201,7 @@ function tasksOf(machineId){ return (byMachine[machineId]||[]).filter(x=>x.activ
 
 /* ---------- Çoklu kimlik eşleştirme ---------- */
 function norm(v){
-  return String(v||'')
-    .toLocaleUpperCase('tr')
+  return String(v||'').toLocaleUpperCase('tr')
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[^A-Z0-9]/g,'');
 }
@@ -551,9 +582,43 @@ function openControl(id){
   if(selectedTask.referenceImageUrl){ $('ref').src=selectedTask.referenceImageUrl; $('ref').classList.remove('hide'); }
   else $('ref').classList.add('hide');
   $('result').value=''; $('desc').value=''; $('proof').value=''; $('saveMsg').textContent='';
+  aciklamaDurumGuncelle();
   step('control');
 }
 
+/* ============================================================
+   RED AÇIKLAMA ZORUNLULUĞU
+   ============================================================ */
+function redMi(){
+  return String($('result').value||'').toLocaleUpperCase('tr').indexOf('RED') > -1;
+}
+
+function aciklamaDurumGuncelle(){
+  const red = redMi();
+  const uzunluk = $('desc').value.trim().length;
+
+  $('descZorunlu').classList.toggle('goster', red);
+  $('redUyari').classList.toggle('goster', red);
+  $('desc').placeholder = red
+    ? 'Arıza nedir? Ne yapılması gerekiyor? (en az ' + RED_MIN + ' karakter)'
+    : 'Açıklama (isteğe bağlı)';
+
+  if(red){
+    $('descSayac').textContent = uzunluk + ' / ' + RED_MIN + ' karakter';
+    $('descSayac').style.color = uzunluk >= RED_MIN ? '#167a42' : '#b11f2e';
+    $('desc').classList.toggle('eksik', uzunluk > 0 && uzunluk < RED_MIN);
+  }else{
+    $('descSayac').textContent = '';
+    $('desc').classList.remove('eksik');
+  }
+}
+
+function aciklamaGecerliMi(){
+  if(!redMi()) return true;
+  return $('desc').value.trim().length >= RED_MIN;
+}
+
+/* ---------- Fotoğraf ---------- */
 function compress(f){
   return new Promise((ok,no)=>{
     if(!f) return ok('');
@@ -573,25 +638,51 @@ function compress(f){
     reader.readAsDataURL(f);
   });
 }
+
 function unlockSave(text){
   clearTimeout(pendingTimer); pendingTimer=null; pending=null;
   $('save').disabled=false; $('save').textContent='Kontrolü Kaydet';
   if(text) $('saveMsg').textContent=text;
 }
+
 async function save(){
   if(pending) return;
   const result=$('result').value, file=$('proof').files[0];
+  const aciklama=$('desc').value.trim();
+
   if(!result) return $('saveMsg').textContent='Sonuç seçin.';
+
+  /* RED verildiyse açıklama zorunludur */
+  if(redMi() && aciklama.length < RED_MIN){
+    $('saveMsg').textContent = 'RED verdiğiniz için açıklama zorunludur. En az ' + RED_MIN + ' karakter yazın.';
+    $('saveMsg').className = 'error';
+    $('desc').classList.add('eksik');
+    $('desc').focus();
+    aciklamaDurumGuncelle();
+    return;
+  }
+
   if(selectedTask.photoRequired && !file) return $('saveMsg').textContent='Kanıt fotoğrafı zorunlu.';
+
   const req='REQ-'+Date.now(), u=getSessionUser();
   pending={req,machineId:selectedMachine.id,templateId:selectedTask.templateId,result};
   $('save').disabled=true; $('save').textContent='Kaydediliyor...';
+  $('saveMsg').className='';
   $('saveMsg').textContent='Fotoğraf hazırlanıyor...';
   try{
     const b64 = await compress(file);
     $('saveMsg').textContent='Gönderiliyor...';
     $('postForm').action=CMMS.API_URL;
-    $('payload').value=JSON.stringify({clientRequestId:req,templateId:selectedTask.templateId,machineId:selectedMachine.id,machineName:selectedMachine.machineName,operator:u.operator||'',result,description:$('desc').value,weekKey:weekKey()});
+    $('payload').value=JSON.stringify({
+      clientRequestId:req,
+      templateId:selectedTask.templateId,
+      machineId:selectedMachine.id,
+      machineName:selectedMachine.machineName,
+      operator:u.operator||'',
+      result,
+      description:aciklama,
+      weekKey:weekKey()
+    });
     $('base64').value=b64;
     $('imageName').value=file?file.name.replace(/[^a-zA-Z0-9._-]/g,'_'):'';
     $('imageType').value=file?'image/jpeg':'';
@@ -599,6 +690,7 @@ async function save(){
     pendingTimer=setTimeout(()=>{ if(pending) unlockSave('Kayıt yanıtı alınamadı. Lütfen tekrar deneyin.'); },25000);
   }catch(error){ unlockSave(error.message); }
 }
+
 function done(r){
   const mid = r.machineId || (pending && pending.machineId);
   const tid = r.templateId || (pending && pending.templateId);
@@ -609,12 +701,14 @@ function done(r){
     saveLocalStatus();
   }
   unlockSave('✅ Kontrol kaydedildi - '+(r.recordId||''));
+  $('saveMsg').className='success';
   renderTasks(); render();
   setTimeout(()=>step('tasks'),700);
 }
 window.addEventListener('message',e=>{
   if(e.data && e.data.source==='CMMS_APPS_SCRIPT_RESULT'){
-    e.data.success ? done(e.data) : unlockSave(e.data.message);
+    if(e.data.success){ done(e.data); }
+    else { unlockSave(e.data.message); $('saveMsg').className='error'; }
   }
 });
 
@@ -629,6 +723,8 @@ async function exitSystem(){
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden && qrRunning) stopCamera(true); });
 window.addEventListener('pagehide', ()=>{ if(qrRunning) stopCamera(true); });
 
+$('result').onchange = aciklamaDurumGuncelle;
+$('desc').oninput = aciklamaDurumGuncelle;
 $('qrModalRetry').onclick = ()=>{ closeQrModal(); lastBadScan=''; startCamera(); };
 $('qrModalBack').onclick  = leaveQr;
 $('camStart').onclick = ()=>startCamera();

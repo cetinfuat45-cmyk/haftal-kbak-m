@@ -1,106 +1,117 @@
-# Haftalık Bakım CMMS V5.4.18 - Tam Paket
+# Haftalık Bakım CMMS V5.4.20
 
-## Bu pakette ne var
+## Bu sürümdeki değişiklik
 
-Ön yüzün tamamı. Şimdiye kadar yapılan bütün düzeltmeler birleştirildi.
+**RED Verilen Bakımlar düğmesi üst menüye taşındı.**
+
+Önceki sürümde düğme ana menünün gövdesindeydi ve yalnızca ana menüde
+görünüyordu. Artık üst menüde, logonun karşısında kırmızı uyarı üçgeni
+ikonu olarak duruyor.
+
+Düğmenin üzerinde **bu haftaki RED sayısı rozet olarak** gösteriliyor.
+Sayı önce yerel kayıttan anında görünür, arka planda sunucudan tazelenir.
+Böylece sayfa açılışı yavaşlamaz. RED kaydı yoksa rozet hiç görünmez.
+
+Üst menü yalnızca giriş yapıldıktan sonra belirir; şifre ekranında gizlidir.
+
+### Değişen dosya
+
+Yalnızca **index.html** değişti. Diğer tüm dosyalar V5.4.19 master
+sürümüyle birebir aynıdır.
+
+### Teknik not
+
+Giriş mantığı index.html içine taşındı ve `app.js` artık çağrılmıyor.
+Dosya pakette duruyor ancak kullanılmıyor; silinebilir veya bırakılabilir.
+
+---
+
+## Dosya listesi
 
 | Dosya | Açıklama |
 |---|---|
-| index.html | Giriş ve panel seçimi |
+| index.html | Giriş ve ana menü (bu sürümde değişti) |
 | weekly-maintenance.html | Operatör bakım paneli |
+| red-list.html | RED verilen bakımlar ekranı |
 | admin-maintenance.html | Admin bakım tanımlama paneli |
 | net.js | Ortak bağlantı katmanı |
-| app.js | Giriş ekranı mantığı |
+| app.js | Eski giriş mantığı (artık kullanılmıyor) |
 | style.css | Ana stil dosyası |
 | mobil-tasma-duzeltme.css | Android ekran taşma düzeltmesi |
-| AKGLOG.png | Logo (sıkıştırılmış) |
-
-## Code.gs hakkında
-
-Sunucu tarafı (Code.gs V5.4.17) zaten Apps Script'e yüklendi ve dağıtıldı.
-Bu pakette yer almıyor çünkü değiştirilmedi. Mevcut dağıtımınız geçerlidir.
+| AKGLOG.png | Logo |
 
 ---
 
-# V5.4.18 - Android ekran taşma düzeltmesi
+## Sistemin yetenekleri
 
-## Sorun
+### Giriş ve yetkilendirme
+- Google E-Tablo `veri` sayfasından şifre doğrulaması.
+- Admin paneli yalnızca yönetici yetkisi olanlara açılır.
 
-Bakım adı boşluksuz ve uzun olduğunda (örneğin 3333333333...) tarayıcı
-metni satır sonunda bölemiyor, kutuyu metin kadar genişletiyor ve sayfa
-yatayda kayıyor. Bu yüzden sol taraftaki numaralar ve başlık ekran
-dışında kalıyordu.
-
-## Çözüm
-
-- Uzun metinler `overflow-wrap: anywhere` ile zorla bölünüyor.
-- Esnek kutulardaki metin alanlarına `min-width: 0` eklendi.
-  Bu satır olmadan diğer kurallar tek başına yeterli olmaz.
-- Sayfanın yatayda kayması `overflow-x: hidden` ile engellendi.
-- Numara kutuları `flex: 0 0 auto` ile ezilmeye karşı korundu.
-- Uzun metinlerde numara üstte hizalı kalıyor.
-- Form alanları 16 piksel yazı boyutunda.
-  iOS Safari'de küçük alanlar otomatik yakınlaştırma yapıp sayfayı kaydırır.
-- 600 ve 380 piksel için ayrı ölçüler eklendi.
-- Modal pencereler `calc(100vw - 28px)` ile ekrana sığdırıldı.
-
----
-
-# Önceki sürümlerden gelen özellikler
-
-## V5.4.16 - QR eşleştirme ve modal uyarılar
-- QR etiketindeki TOPLAM MAKİNE KODU tanınıyor.
-- Çoklu kimlik eşleştirme: iç ID, makine adı, maliyet merkezi, toplam kod.
-- URL ve JSON biçimli etiket desteği.
-- Manuel Makine ID girişi kaldırıldı; operatör makine başına gitmek zorunda.
-- QR hataları tam ekran modalda gösteriliyor.
-- Yanlış etiket okunduğunda ait olduğu makine bildiriliyor.
-
-## V5.4.15 - Kamera yönetimi
-- HTTPS denetimi ve açık uyarı.
-- Kamerayı Başlat / Değiştir / Durdur düğmeleri.
-- Arka kamera otomatik seçimi, deviceId yedek yöntemi.
-- Hata türüne göre ayrı çözüm metinleri.
-- Yedek CDN.
-
-## V5.4.14 - Operatör makine ekranı
-- Makine kartında yalnızca makine adı, ID gösterilmiyor.
-- Bakımlar 1, 2, 3 ... numaralı renkli bar.
+### Operatör bakım paneli
+- Makine kartında yalnızca makine adı görünür, iç ID gizlidir.
+- Bakımlar 1, 2, 3 şeklinde numaralı renkli bar olarak listelenir.
 - Bekleyen #FFB733, Tamamlanan #99FF99, Red #FF9999.
-- "x / y bakım tamamlandı" sayacı ve renk açıklaması.
+- "x / y bakım tamamlandı" ilerleme sayacı.
 
-## V5.4.13 - Bağlantı hızı
-- Ortak bağlantı katmanı, zaman aşımı 12 sn + otomatik tekrar.
-- Paralel istek, localStorage önbelleği, preconnect, bağlantı ısıtma.
-- Logo 193 KB yerine 12 KB.
-- Fotoğraf gönderim öncesi küçültülüyor.
+### QR doğrulama
+- Makine önce listeden seçilir, QR yalnızca doğrulama amaçlıdır.
+- Çoklu kimlik eşleştirme: iç ID, makine adı, maliyet merkezi,
+  toplam makine kodu.
+- URL ve JSON biçimli etiketler desteklenir.
+- Manuel ID girişi yoktur; operatör makine başına gitmek zorundadır.
+- Hatalı etiket okunduğunda etiketin hangi makineye ait olduğu bildirilir.
 
-## Bu pakette ayrıca
-- Admin paneline yetki kontrolü eklendi.
-  Yönetici olmayan kullanıcı bu sayfayı açamaz.
-- Hafta anahtarı ön yüzde de ISO biçiminde üretiliyor (2026-W40).
-- Kayıt cevabındaki machineId ve templateId kullanılarak renk güncelleniyor.
+### Kontrol kaydı
+- Sonuç: UYGUN veya RED.
+- RED seçilirse açıklama zorunludur (en az 10 karakter).
+- Canlı karakter sayacı ve uyarı kutusu.
+- Kanıt fotoğrafı gönderilmeden önce küçültülür.
+
+### RED Verilen Bakımlar ekranı
+- RED verilen her bakım ayrı kartta.
+- Makine adı, operatör, tarih, hafta bilgisi.
+- Operatör açıklaması sarı vurgulu kutuda.
+- Kanıt fotoğrafı; dokununca tam ekran.
+- Filtreler: dönem, makine, serbest arama.
+
+### Admin paneli
+- Bakım tanımı oluşturma, düzenleme, silme.
+- Referans resim yükleme ve önizleme.
+- Makine bazında gruplanmış liste.
 
 ---
 
-# Kurulum
+## Sunucu tarafı
 
-1. Bütün dosyaları aynı klasöre koyun.
+`Code.gs` bu pakette yer almaz. Apps Script üzerinde **V5.4.17**
+dağıtılmıştır ve bu ön yüzle uyumludur. Değişiklik gerekmez.
+
+---
+
+## Kurulum
+
+1. Tüm dosyaları aynı klasöre koyun.
 2. Klasörü HTTPS bir adreste yayınlayın.
-   Kamera yalnızca https:// adreslerde çalışır.
+   Kamera yalnızca güvenli adreslerde çalışır.
 3. index.html adresini açın.
 
-Yerel test için:
+Yerel test:
 
 ```
 cd proje_klasoru
 python -m http.server 8000
 ```
 
-Sonra http://localhost:8000 açın. (localhost güvenli sayılır.)
+Sonra http://localhost:8000 açın.
 
-## Önemli
-
-Güncelleme sonrası tarayıcı önbelleğini temizleyin.
+**Önemli:** Güncelleme sonrası tarayıcı önbelleğini temizleyin.
 Masaüstünde Ctrl+Shift+R, telefonda site verilerini temizleyin.
-Aksi halde eski CSS ve JS dosyaları yüklü kalır.
+
+---
+
+## Geri dönüş
+
+Sorun çıkarsa MASTER V5.4.19 paketine dönebilirsiniz.
+Bu sürümde yalnızca index.html değiştiği için, master paketteki
+index.html dosyasını geri kopyalamak yeterlidir.

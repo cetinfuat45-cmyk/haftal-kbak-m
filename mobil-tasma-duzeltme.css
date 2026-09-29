@@ -1,27 +1,9 @@
 /* =====================================================================
    Haftalık Bakım CMMS - Android Ekran Taşma Düzeltmesi
-   Sürüm: V5.4.18
+   Sürüm: V5.4.19
 
-   SORUN:
-   Bakım adı boşluksuz ve uzun olduğunda (örneğin 333333333...)
-   metin satır sonunda bölünemiyor. Tarayıcı kutuyu metin kadar
-   genişletiyor, sayfa yatayda büyüyor ve kart sola kayıyor.
-   Bu yüzden sol taraftaki numaralar ve başlık ekran dışında kalıyor.
-
-   KULLANIM:
-   Bu dosyayı proje klasörüne kopyalayın ve style.css satırından
-   SONRA ekleyin:
-
-     <link rel="stylesheet" href="style.css">
-     <link rel="stylesheet" href="mobil-tasma-duzeltme.css">
-
-   Sonra ekleneceği için mevcut kuralları güvenle geçersiz kılar.
+   style.css satırından SONRA eklenmelidir.
    ===================================================================== */
-
-
-/* ---------------------------------------------------------------
-   1. Sayfanın yatayda kaymasını kesin olarak engelle
-   --------------------------------------------------------------- */
 
 html,
 body {
@@ -29,56 +11,49 @@ body {
   overflow-x: hidden;
 }
 
-/* Kutu hesabını sadeleştirir, taşmayı azaltır */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-
-/* ---------------------------------------------------------------
-   2. Kartların ekran genişliğini aşmasını engelle
-   --------------------------------------------------------------- */
-
 main,
 .card,
 .machine-card,
-.listBtn {
+.listBtn,
+.red-card {
   max-width: 100%;
   overflow-x: hidden;
 }
 
 
-/* ---------------------------------------------------------------
-   3. ASIL DÜZELTME
-   Boşluksuz uzun metinleri zorla böl
-   --------------------------------------------------------------- */
+/* Boşluksuz uzun metinleri zorla böl */
 
 .task-text,
 .task-text b,
 .task-text small,
 .machine-card .mc-name,
 .mc-progress,
+.red-card b,
+.red-card small,
+.red-aciklama,
 #taskName,
 #controlName,
 #qrName,
 h1,
 h2 {
-  min-width: 0;              /* flex çocuğunun küçülebilmesi için zorunlu */
-  overflow-wrap: anywhere;   /* boşluk yoksa da böl */
+  min-width: 0;
+  overflow-wrap: anywhere;
   word-break: break-word;
   hyphens: auto;
 }
 
 
-/* ---------------------------------------------------------------
-   4. Bakım satırı yerleşimi
-   --------------------------------------------------------------- */
+/* Bakım satırı yerleşimi */
 
 #taskList .listBtn {
   display: flex;
-  align-items: flex-start;   /* uzun metinde numara üstte kalsın */
+  align-items: flex-start;
   gap: 12px;
   width: 100%;
   max-width: 100%;
@@ -86,7 +61,6 @@ h2 {
   text-align: left;
 }
 
-/* Numara kutusu asla küçülmesin veya ezilmesin */
 .task-no {
   flex: 0 0 auto;
   min-width: 34px;
@@ -94,7 +68,6 @@ h2 {
   margin-top: 2px;
 }
 
-/* Metin bloğu kalan alanı kullansın ve küçülebilsin */
 .task-text {
   flex: 1 1 auto;
   min-width: 0;
@@ -115,9 +88,7 @@ h2 {
 }
 
 
-/* ---------------------------------------------------------------
-   5. Makine kartı ve durum barı
-   --------------------------------------------------------------- */
+/* Makine kartı ve durum barı */
 
 .machine-card {
   width: 100%;
@@ -127,7 +98,7 @@ h2 {
 
 .step-bar {
   display: flex;
-  flex-wrap: wrap;           /* numaralar alt satıra insin */
+  flex-wrap: wrap;
   gap: 6px;
   max-width: 100%;
 }
@@ -137,9 +108,7 @@ h2 {
 }
 
 
-/* ---------------------------------------------------------------
-   6. Form alanları taşmasın
-   --------------------------------------------------------------- */
+/* Form alanları */
 
 input,
 select,
@@ -153,8 +122,7 @@ textarea {
   resize: vertical;
 }
 
-/* iOS Safari'de 16px altındaki alanlar otomatik yakınlaştırma
-   yapar ve sayfa kayar. 16px bunu engeller. */
+/* iOS Safari otomatik yakınlaştırma engeli */
 input,
 select,
 textarea {
@@ -162,22 +130,19 @@ textarea {
 }
 
 
-/* ---------------------------------------------------------------
-   7. Resimler kabına sığsın
-   --------------------------------------------------------------- */
+/* Resimler */
 
 img,
 #ref,
 .reference,
-.reference-image {
+.reference-image,
+.red-foto {
   max-width: 100%;
   height: auto;
 }
 
 
-/* ---------------------------------------------------------------
-   8. Üst menü taşmasın
-   --------------------------------------------------------------- */
+/* Üst menü */
 
 .op-header {
   max-width: 100%;
@@ -201,13 +166,12 @@ img,
 }
 
 
-/* ---------------------------------------------------------------
-   9. QR modalı küçük ekranda sığsın
-   --------------------------------------------------------------- */
+/* Modallar */
 
 .qr-modal-card,
 .confirm-card,
-.modal {
+.modal,
+.foto-modal-card {
   max-width: calc(100vw - 28px);
   max-height: 88vh;
   overflow-y: auto;
@@ -221,9 +185,7 @@ img,
 }
 
 
-/* ---------------------------------------------------------------
-   10. Dar ekran ayarları (Android telefonlar)
-   --------------------------------------------------------------- */
+/* Dar ekranlar */
 
 @media (max-width: 600px) {
 
@@ -275,22 +237,13 @@ img,
 }
 
 
-/* ---------------------------------------------------------------
-   11. Çok dar ekranlar (360 piksel ve altı)
-   --------------------------------------------------------------- */
-
 @media (max-width: 380px) {
 
   .card {
     padding: 12px 10px;
   }
 
-  .task-no {
-    min-width: 28px;
-    height: 28px;
-    font-size: 13px;
-  }
-
+  .task-no,
   .step {
     min-width: 28px;
     height: 28px;

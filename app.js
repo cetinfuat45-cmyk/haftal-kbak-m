@@ -1,5 +1,5 @@
 'use strict';
-/* Haftalık Bakım CMMS - Giriş Ekranı - V5.4.18 */
+/* Haftalık Bakım CMMS - Giriş Ekranı - V5.4.19 */
 const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
 
 function loading(p, t, n = '') {
@@ -10,6 +10,17 @@ function loading(p, t, n = '') {
   $('loadTitle').textContent = (n ? n + ' için ' : '') + 'sistem yükleniyor';
 }
 CMMS.warmUp();
+
+function showHome(user) {
+  const userName = user.operator || user.name || user.fullName || 'Kullanıcı';
+  const admin = String(user.role || '').toLocaleLowerCase('tr').includes('admin');
+  $('loader').classList.add('hide');
+  $('login').classList.add('hide');
+  $('home').classList.remove('hide');
+  $('welcome').textContent = 'Hoş geldiniz, ' + userName;
+  $('logout').classList.remove('hide');
+  $('adminBtn').classList.toggle('hide', !admin);
+}
 
 async function login() {
   const password = $('password').value.trim();
@@ -26,19 +37,10 @@ async function login() {
     const userName = r.user.operator || r.user.name || r.user.fullName || 'Kullanıcı';
     loading(55, 'Kullanıcı doğrulandı.', userName);
     sessionStorage.setItem(SESSION, JSON.stringify(r.user));
-    const admin = String(r.user.role || '').toLocaleLowerCase('tr').includes('admin');
-    if (admin) {
-      loading(100, 'Sistem hazır.', userName);
-      $('loader').classList.add('hide'); $('login').classList.add('hide');
-      $('home').classList.remove('hide');
-      $('welcome').textContent = 'Hoş geldiniz, ' + userName;
-      $('logout').classList.remove('hide');
-    } else {
-      loading(75, 'Bakım listesi hazırlanıyor...', userName);
-      await bootstrapPromise;
-      loading(100, 'Panel açılıyor.', userName);
-      location.replace('weekly-maintenance.html');
-    }
+    loading(85, 'Bakım listesi hazırlanıyor...', userName);
+    await bootstrapPromise;
+    loading(100, 'Sistem hazır.', userName);
+    showHome(r.user);
   } catch (e) {
     $('loader').classList.add('hide'); $('msg').textContent = e.message;
   } finally { $('loginBtn').disabled = false; }
@@ -55,20 +57,16 @@ $('testBtn').onclick = async () => {
   } catch (e) { $('msg').textContent = e.message; }
 };
 $('opBtn').onclick = () => location.href = 'weekly-maintenance.html';
+$('redBtn').onclick = () => location.href = 'red-list.html';
 $('adminBtn').onclick = () => location.href = 'admin-maintenance.html';
-$('logout').onclick = () => { sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.reload(); };
+$('logout').onclick = () => { sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.href = 'index.html'; };
 
 function showHomeFromSession() {
-  const params = new URLSearchParams(location.search);
-  if (params.get('screen') !== 'home') return;
   const raw = sessionStorage.getItem(SESSION);
   if (!raw) return;
-  try {
-    const user = JSON.parse(raw), userName = user.operator || user.name || user.fullName || 'Kullanıcı';
-    $('loader').classList.add('hide'); $('login').classList.add('hide');
-    $('home').classList.remove('hide');
-    $('welcome').textContent = 'Hoş geldiniz, ' + userName;
-    $('logout').classList.remove('hide');
-  } catch (error) { sessionStorage.removeItem(SESSION); }
+  const params = new URLSearchParams(location.search);
+  if (params.get('screen') !== 'home') return;
+  try { showHome(JSON.parse(raw)); }
+  catch (error) { sessionStorage.removeItem(SESSION); }
 }
 showHomeFromSession();

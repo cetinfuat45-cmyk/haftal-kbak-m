@@ -1,10 +1,10 @@
 'use strict';
 /* =====================================================================
    Haftalık Bakım CMMS - Ortak Bağlantı Katmanı
-   Sürüm: V5.4.18
+   Sürüm: V5.4.19
    ===================================================================== */
 const CMMS = (function () {
-  const VERSION = 'V5.4.18';
+  const VERSION = 'V5.4.19';
   const API_URL = 'https://script.google.com/macros/s/AKfycbwjECihD-JQg6ITpewj4ga3HzMraB4sUNhrCf40l6Fjlf2EOhIY9oMknFHAnG_XTCPP/exec';
   const SESSION = 'haftalikBakimV544User';
   const TIMEOUT_MS = 12000, RETRY_COUNT = 1;
@@ -84,8 +84,18 @@ const CMMS = (function () {
     return network;
   }
 
+  /* ISO hafta anahtarı: 2026-W40 */
+  function weekKey(date) {
+    const d = new Date(date || new Date());
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const y0 = new Date(d.getFullYear(), 0, 1);
+    const w = Math.ceil((((d - y0) / 86400000) + 1) / 7);
+    return d.getFullYear() + '-W' + String(w).padStart(2, '0');
+  }
+
   let warmed = false;
   function warmUp() { if (warmed) return; warmed = true; call('health', {}, { retries: 0, timeout: 8000 }).catch(function () {}); }
 
-  return { VERSION, API_URL, SESSION, call, cachedCall, cacheClear, cacheWrite, cacheRead, warmUp };
+  return { VERSION, API_URL, SESSION, call, cachedCall, cacheClear, cacheWrite, cacheRead, warmUp, weekKey };
 })();
