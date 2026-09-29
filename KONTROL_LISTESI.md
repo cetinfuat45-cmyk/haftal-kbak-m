@@ -1,30 +1,36 @@
-# V5.4.15 Kontrol Listesi
+# V5.4.16 Kontrol Listesi
 
-## QR kamera (bu sürümün konusu)
-- [ ] Makine seçilince QR ekranı açılıyor.
-- [ ] Kamera otomatik açılmaya çalışıyor.
-- [ ] Açılmazsa "Kamerayı Başlat" düğmesiyle açılıyor.
-- [ ] Sayfa HTTPS değilse güvenlik uyarısı ve adres görünüyor.
+## QR doğrulama (ana düzeltme)
+- [ ] HAAS CNC VF4 / 2 makinesi seçilip kendi etiketi okutulunca bakım listesi açılıyor.
+- [ ] Etiketteki TOPLAM MAKİNE KODU kabul ediliyor.
+- [ ] Başka makinenin etiketi okutulunca modal açılıyor.
+- [ ] Modalda seçilen makine ve okunan etiket karşılaştırmalı görünüyor.
+- [ ] Etiket başka bir makineye aitse o makinenin adı yazıyor.
+- [ ] Tanımsız etiket okutulunca kontrol listesi görünüyor.
+
+## Manuel giriş kaldırıldı
+- [ ] QR ekranında Manuel Makine ID kutusu YOK.
+- [ ] Doğrula düğmesi YOK.
+- [ ] QR okutmadan bakım ekranına geçmek mümkün değil.
+
+## Modal davranışı
+- [ ] Hata modalı tam ekran açılıyor.
+- [ ] Tekrar Okut kamerayı yeniden başlatıyor.
+- [ ] Makine Listesine Dön makine listesine götürüyor.
+- [ ] Modal açıkken kamera duruyor.
+- [ ] Aynı hatalı etiket üst üste okunsa da modal bir kez açılıyor.
+
+## Kamera hata modalları
+- [ ] HTTPS değilse uyarı modalı ve adres görünüyor.
 - [ ] İzin reddedilince izin açma adımları görünüyor.
-- [ ] Kamera başka uygulamadaysa ilgili uyarı görünüyor.
-- [ ] Birden fazla kamera varsa "Kamerayı Değiştir" görünüyor.
-- [ ] "Kamerayı Durdur" kamerayı kapatıyor.
-- [ ] Kamera açıkken kullanılan kameranın adı yazıyor.
-- [ ] Doğru QR okununca bakım listesine geçiyor.
-- [ ] Yanlış QR okununca beklenen ID uyarısı çıkıyor.
-- [ ] Geri düğmesiyle çıkınca kamera kapanıyor.
-- [ ] İkinci kez QR ekranına girince kamera yine açılıyor (donma yok).
-- [ ] Sekme arka plana alınınca kamera kapanıyor.
-- [ ] Manuel Makine ID + Doğrula çalışıyor.
-- [ ] Manuel kutuda Enter tuşu çalışıyor.
+- [ ] Kamera meşgulse ilgili modal çıkıyor.
+- [ ] Kütüphane yüklenemezse modal çıkıyor.
 
-## Operatör makine ekranı (V5.4.14 korundu)
+## Operatör makine ekranı (korundu)
 - [ ] Makine kartında yalnızca makine adı görünüyor.
-- [ ] Bakımlar 1, 2, 3 ... numaralı bar olarak görünüyor.
+- [ ] Bakımlar numaralı renkli bar olarak görünüyor.
 - [ ] Bekleyen turuncu, tamamlanan yeşil, red kırmızı.
-- [ ] "x / y bakım tamamlandı" sayacı doğru.
 
-## Bağlantı (V5.4.13 korundu)
+## Bağlantı (korundu)
 - [ ] Bağlantıyı Test Et milisaniye gösteriyor.
 - [ ] İkinci açılışta liste anında geliyor.
-- [ ] Admin panelinde iki liste aynı anda yükleniyor.

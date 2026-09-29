@@ -1,40 +1,54 @@
-# Haftalık Bakım CMMS V5.4.15
+# Haftalık Bakım CMMS V5.4.16
 
-## Bu sürümdeki değişiklik: QR kamera açılmama sorunu
+## Bu sürümdeki üç değişiklik
 
-- Sayfa HTTPS değilse artık açık uyarı veriliyor ve o anki adres gösteriliyor.
-  (Kameranın açılmamasının en sık nedeni budur.)
-- Kamera izni için ayrı **Kamerayı Başlat** düğmesi eklendi.
-  iOS Safari ve bazı Android tarayıcılar kamerayı yalnızca doğrudan
-  düğmeye basıldığında açar.
-- **Kamerayı Değiştir** ve **Kamerayı Durdur** düğmeleri eklendi.
-- Cihazdaki kameralar taranıyor, arka kamera adından otomatik seçiliyor.
-- facingMode başarısız olursa deviceId ile yeniden deneniyor.
-- Kamera çerçevesi (qrbox) ekran genişliğine göre hesaplanıyor.
-  Sabit 230 piksel küçük ekranlarda kameranın açılmasını engelliyordu.
-- Önceki kamera örneği tam temizleniyor; ikinci kez QR ekranına girince
-  oluşan donma giderildi.
-- Hata türüne göre ayrı çözüm metni gösteriliyor:
-  izin reddi, kamera bulunamadı, kamera başka uygulamada, tarayıcı desteklemiyor.
-- QR kütüphanesi için yedek CDN eklendi (unpkg engellenirse jsdelivr denenir).
-- Sekme arka plana alınınca kamera otomatik kapanıyor.
-- Manuel Makine ID kutusu görünür hale getirildi ve Enter tuşu eklendi.
+### 1. QR doğrulama sorunu çözüldü (ana düzeltme)
 
-Ayrıntılı çözüm rehberi: **QR_SORUN_COZUM.md**
+Sahadaki etiket **TOPLAM MAKİNE KODU** (makine adı + maliyet merkezi)
+taşıyor, sistem ise yalnızca iç ID ile karşılaştırıyordu. Bu yüzden
+hiçbir etiket geçmiyordu.
+
+Artık çoklu kimlik eşleştirme yapılıyor: iç ID, makine adı,
+maliyet merkezi, toplam makine kodu, machineCode alanı.
+URL ve JSON biçimli etiketler de destekleniyor.
+
+Ayrıntı: **QR_ETIKET_KURALI.md**
+
+### 2. Manuel Makine ID girişi kaldırıldı
+
+Operatörün makine başına fiziksel olarak gitmesi zorunlu hale getirildi.
+Artık QR okutmadan bakım ekranına geçmenin hiçbir yolu yok.
+
+### 3. QR hataları modal ekranda gösteriliyor
+
+Küçük gri yazı yerine tam ekran uyarı penceresi açılıyor:
+
+- **Hatalı Makine Etiketi**: seçilen makine ile okunan etiket
+  yan yana karşılaştırmalı gösteriliyor. Etiket başka bir makineye
+  aitse o makinenin adı da yazılıyor.
+- **Kamera Açılamıyor**: sayfa HTTPS değilse adres gösteriliyor.
+- **Kamera İzni Reddedildi**: izin açma adımları.
+- **Kamera Meşgul**: kamerayı kullanan uygulamayı kapatma adımları.
+- **Kamera Bulunamadı** ve **QR Kütüphanesi Yüklenemedi**.
+
+Her modalda **Tekrar Okut** ve **Makine Listesine Dön** düğmeleri var.
 
 ## Korunan özellikler
 
 ### V5.4.14 - Operatör makine ekranı
-- Makine kartında yalnızca makine adı görünür, ID gösterilmez.
-- Bakımlar 1, 2, 3 ... numaralı renkli bar olarak listelenir.
+- Makine kartında yalnızca makine adı, ID gösterilmiyor.
+- Bakımlar 1, 2, 3 ... numaralı renkli bar.
 - Bekleyen #FFB733, Tamamlanan #99FF99, Red #FF9999.
-- "x / y bakım tamamlandı" sayacı ve renk açıklaması.
 
 ### V5.4.13 - Bağlantı hızı
-- net.js ortak bağlantı katmanı, zaman aşımı 12 sn + otomatik tekrar.
-- Paralel istek, localStorage önbelleği, preconnect, bağlantı ısıtma.
-- Logo 193 KB yerine 12 KB.
-- Operatör fotoğrafı gönderim öncesi küçültme.
+- net.js ortak bağlantı katmanı, zaman aşımı + otomatik tekrar.
+- Paralel istek, önbellek, preconnect, bağlantı ısıtma.
+- Logo sıkıştırma, fotoğraf sıkıştırma.
+
+### V5.4.15 - Kamera yönetimi
+- Kamerayı Başlat / Değiştir / Durdur düğmeleri.
+- Arka kamera otomatik seçimi, deviceId yedek yöntemi.
+- Sekme arka plana alınınca kamera kapanıyor.
 
 ## Dosyalar
 
@@ -45,7 +59,8 @@ Ayrıntılı çözüm rehberi: **QR_SORUN_COZUM.md**
 - admin-maintenance.html
 - style.css
 - AKGLOG.png
-- QR_SORUN_COZUM.md  (YENİ)
+- QR_ETIKET_KURALI.md  (YENİ)
+- QR_SORUN_COZUM.md
 - APPS_SCRIPT_HIZ.md
 - KONTROL_LISTESI.md
 - SURUM_GECMISI.md

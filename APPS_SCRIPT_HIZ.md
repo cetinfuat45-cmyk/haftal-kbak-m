@@ -1,10 +1,22 @@
 # Apps Script Notları
 
-## 1. Durum renkleri için gerekli alan
+## 1. machineCode alanı eklemeniz önerilir
 
-Operatör ekranındaki renkli numara barının tüm operatörlerde ortak
-çalışması için `getWeeklyBootstrap` yanıtına bu haftanın sonuç kayıtları
-eklenmelidir:
+QR eşleştirmesini sağlamlaştırmak için makine kaydına toplam makine
+kodunu açıkça ekleyin:
+
+```javascript
+machines.push({
+  id: String(r[0]),
+  machineName: String(r[1]),
+  costCenter: String(r[2] || ''),
+  machineCode: String(r[1]) + '-' + String(r[2] || '')
+});
+```
+
+Ön yüz bu alanı otomatik tanır.
+
+## 2. Durum renkleri için sonuç kayıtları
 
 ```javascript
 function getWeeklyBootstrap() {
@@ -12,7 +24,7 @@ function getWeeklyBootstrap() {
     success: true,
     machines: ...,
     templatesByMachine: ...,
-    results: getWeekResults()   // YENİ
+    results: getWeekResults()
   };
 }
 
@@ -35,10 +47,7 @@ function getWeekResults() {
 Ön yüz şu alan adlarını tanır:
 `results`, `records`, `maintenanceResults`, `weeklyResults`, `sonuclar`.
 
-Sonuçta **RED** geçiyorsa numara kırmızı, aksi halde yeşil olur.
-Kayıt yoksa turuncu kalır.
-
-## 2. Hücre hücre okuma yapmayın
+## 3. Hücre hücre okuma yapmayın
 
 Yavaş:
 ```javascript
@@ -49,7 +58,7 @@ Hızlı:
 const values = sheet.getDataRange().getValues();
 ```
 
-## 3. CacheService kullanın
+## 4. CacheService kullanın
 
 ```javascript
 function listMachinesCached() {
@@ -58,7 +67,9 @@ function listMachinesCached() {
   if (hit) return JSON.parse(hit);
   const values = ss().getSheetByName('makineler').getDataRange().getValues();
   const machines = values.slice(1).filter(r => r[0]).map(r => ({
-    id: String(r[0]), machineName: String(r[1]), costCenter: String(r[2] || '')
+    id: String(r[0]), machineName: String(r[1]),
+    costCenter: String(r[2] || ''),
+    machineCode: String(r[1]) + '-' + String(r[2] || '')
   }));
   const out = { success: true, machines: machines, count: machines.length };
   cache.put('machines_v1', JSON.stringify(out), 900);
@@ -66,14 +77,14 @@ function listMachinesCached() {
 }
 ```
 
-## 4. openById çağrısını tekrarlamayın
+## 5. openById çağrısını tekrarlamayın
 
 ```javascript
 let _ss = null;
 function ss() { if (!_ss) _ss = SpreadsheetApp.openById(SHEET_ID); return _ss; }
 ```
 
-## 5. Ölçüm
+## 6. Ölçüm
 
 | Süre | Değerlendirme |
 |---|---|

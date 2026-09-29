@@ -1,90 +1,57 @@
-# QR Kamera Açılmıyor - Çözüm Rehberi (V5.4.15)
+# QR Kamera Sorun Çözüm Rehberi
 
-## En sık neden: Sayfa HTTPS değil
+## Kamera hiç açılmıyor
 
-Tarayıcılar kamerayı **yalnızca güvenli adreslerde** açar. Aşağıdaki
-durumlarda kamera hiçbir tarayıcıda çalışmaz:
+### Sayfa HTTPS değil
+Tarayıcılar kamerayı yalnızca güvenli adreslerde açar.
+Dosyayı çift tıklayarak açtıysanız (`file:///C:/...`) kamera çalışmaz.
 
-- Dosyayı bilgisayardan çift tıklayarak açtıysanız (`file:///C:/...`)
-- Sayfa `http://` ile açılıyorsa (`https://` değil)
-
-### Nasıl anlarsınız
-Yeni sürümde QR ekranında şu uyarı çıkar:
-**"Kamera açılamıyor: sayfa güvenli değil."**
-Altında o anki adres de yazar.
-
-### Çözüm
-Projeyi HTTPS bir adreste yayınlayın:
-
-| Yöntem | Adres biçimi | Ücret |
-|---|---|---|
-| GitHub Pages | `https://kullanici.github.io/proje/` | Ücretsiz |
-| Google Sites | `https://sites.google.com/...` | Ücretsiz |
-| Netlify (klasörü sürükle-bırak) | `https://ad.netlify.app` | Ücretsiz |
-| Şirket SharePoint / IIS | `https://...` | Mevcut altyapı |
-
-Yerel test için `localhost` da kabul edilir:
-
+Yerel test için:
 ```
 cd proje_klasoru
 python -m http.server 8000
 ```
-Sonra `http://localhost:8000` adresini açın. (localhost güvenli sayılır.)
+Sonra `http://localhost:8000` açın. (localhost güvenli sayılır.)
 
----
+Yayın için: GitHub Pages, Netlify, Google Sites veya şirket HTTPS sunucusu.
 
-## İkinci neden: Kamera izni reddedilmiş
+### Kamera izni reddedilmiş
+- **Android Chrome:** Kilit simgesi > İzinler > Kamera > İzin ver
+- **iPhone Safari:** Ayarlar > Safari > Kamera > Sor
+- **Masaüstü:** Adres çubuğundaki kamera simgesi > İzin ver > Yenile
 
-Bir kez "Engelle" denmişse tarayıcı bir daha sormaz.
+### Uygulama içi tarayıcı
+WhatsApp, Teams veya Instagram içinden açılan bağlantılarda kamera engellenir.
+Bağlantıyı kopyalayıp Chrome veya Safari'de açın.
 
-**Android Chrome:** Adres çubuğundaki kilit simgesi > İzinler > Kamera > İzin ver
-**iPhone Safari:** Ayarlar > Safari > Kamera > Sor
-**Masaüstü Chrome/Edge:** Adres çubuğundaki kamera simgesi > İzin ver > Sayfayı yenile
-
-Yeni sürüm bu durumda **"Kamera izni reddedildi."** yazar ve adımları gösterir.
-
----
-
-## Üçüncü neden: Uygulama içi tarayıcı
-
-Bağlantıyı WhatsApp, Teams veya Instagram içinden açtıysanız kamera engellenir.
-
-**Çözüm:** Bağlantıyı kopyalayıp Chrome veya Safari'de açın.
-
----
-
-## Dördüncü neden: Kamera başka uygulamada açık
-
-Teams, Zoom veya kamera uygulaması kamerayı kilitlemiş olabilir.
-Yeni sürüm bu durumda **"Kamera başka bir uygulama tarafından kullanılıyor."** yazar.
-
----
-
-## Beşinci neden: QR kütüphanesi indirilemiyor
-
-Şirket ağı `unpkg.com` adresini engelliyorsa kütüphane yüklenmez.
-Yeni sürüm otomatik olarak yedek adresi (`cdn.jsdelivr.net`) dener.
-
-İkisi de engelliyse kalıcı çözüm dosyayı yerelleştirmektir:
-
-1. `https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js` dosyasını indirin.
-2. Proje klasörüne `html5-qrcode.min.js` adıyla koyun.
-3. `weekly-maintenance.html` içindeki `loadQrLib` fonksiyonunda ilk satırı
-   `loadScript('html5-qrcode.min.js')` olarak değiştirin.
-
----
+### Kamera başka uygulamada açık
+Teams, Zoom veya kamera uygulamasını kapatın.
 
 ## Kamera açık ama QR okumuyor
 
-- QR etiketini çerçevenin içine, ekranı kaplayacak şekilde yaklaştırın.
-- Etiket kirli, buruşuk veya yansıma yapıyorsa okunmaz.
+- Etiketi çerçeveye yaklaştırın, çerçeveyi dolduracak kadar.
 - Ortam çok karanlıksa okuma başarısız olur.
-- **Kamerayı Değiştir** düğmesiyle arka kameraya geçin (ön kamera düşük çözünürlüklüdür).
-- Etiketteki metin makine ID ile birebir aynı olmalıdır.
+- Yansıma varsa açıyı değiştirin.
+- **Kamerayı Değiştir** ile arka kameraya geçin.
+- Etiket buruşuk, kirli veya çizikse yenileyin.
 
----
+## "Hatalı Makine Etiketi" uyarısı çıkıyor
 
-## Her durumda çalışan yedek yöntem
+V5.4.16 ile eşleştirme mantığı düzeltildi. Yine de çıkıyorsa:
 
-QR ekranının altındaki **Manuel Makine ID** kutusuna makine ID'sini yazıp
-**Doğrula** düğmesine basın. Bu yöntem kamera olmadan da çalışır.
+1. Modalda **Okunan etiket** satırındaki değere bakın.
+2. Modal "Bu etiket şu makineye ait" diyorsa yanlış makinenin
+   başındasınız demektir.
+3. Hiçbir makineye ait değilse etiket sistemde tanımlı değildir.
+   Admin panelinden makine kaydını kontrol edin.
+
+Ayrıntılı eşleştirme kuralları: **QR_ETIKET_KURALI.md**
+
+## Etiket basarken
+
+QR içeriği şunlardan biri olmalıdır:
+- İç ID (`eac54b58`)
+- Makine adı (`HAAS CNC VF4 / 2`)
+- Toplam makine kodu (`HAAS CNC VF4 / 2-351321-4`)
+
+Üçü de sistem tarafından kabul edilir.
