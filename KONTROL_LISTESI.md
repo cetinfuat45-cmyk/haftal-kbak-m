@@ -1,47 +1,44 @@
-# V5.4.20 Kontrol Listesi
+# V5.4.21 Kontrol Listesi
 
-## Üst menü RED düğmesi (bu sürümün konusu)
-- [ ] Şifre ekranında üst menü görünmüyor.
-- [ ] Giriş yapılınca üst menü beliriyor.
-- [ ] RED düğmesi kırmızı üçgen ikonu olarak görünüyor.
-- [ ] Düğmeye basınca RED listesi açılıyor.
-- [ ] Bu hafta RED varsa rozet görünüyor.
+## Admin kayıt sorunu (bu sürümün konusu)
+- [ ] Resim seçilince "gönderilecek: X KB" bilgisi görünüyor.
+- [ ] Gönderilen boyut önceki sürüme göre belirgin şekilde küçük.
+- [ ] 900 KB üzerindeki resimlerde uyarı rengi çıkıyor.
+- [ ] Kaydet düğmesine basınca "Gönderiliyor... (en fazla 60 saniye)" yazıyor.
+- [ ] Normal durumda kayıt 60 saniyeden önce tamamlanıyor.
+- [ ] Kayıt başarılıysa form temizleniyor ve liste yenileniyor.
+- [ ] Yanıt gecikirse "kayıt kontrol ediliyor..." mesajı çıkıyor.
+- [ ] Kayıt oluşmuşsa "gecikmeli geldi" mesajı ve başarı durumu görünüyor.
+- [ ] Kayıt oluşmamışsa "doğrulanamadı" uyarısı çıkıyor.
+- [ ] Hata sonrası Kaydet düğmesi tekrar kullanılabiliyor.
+- [ ] Büyük ekran görüntüsü dosyasıyla da kayıt tamamlanıyor.
+
+## Admin paneli genel
+- [ ] Yönetici olmayan kullanıcı ekranı açamıyor.
+- [ ] Makine ve bakım listesi aynı anda yükleniyor.
+- [ ] Düzenleme çalışıyor (resimsiz güncelleme dahil).
+- [ ] Silme onay soruyor ve çalışıyor.
+- [ ] Listeyi Yenile taze veri getiriyor.
+- [ ] Bağlantıyı Test Et milisaniye gösteriyor.
+
+## Ana menü
+- [ ] Üst menüde RED düğmesi görünüyor.
 - [ ] Rozet sayısı doğru.
-- [ ] RED yoksa rozet görünmüyor.
-- [ ] 99'dan fazla RED varsa rozet "99+" gösteriyor.
-- [ ] Düğme üzerine gelince ipucu metni sayıyı içeriyor.
-- [ ] Sayfa ikinci açılışta rozet anında görünüyor.
-- [ ] Çıkış düğmesi çalışıyor.
-- [ ] Ana menü gövdesinde artık RED düğmesi yok.
-- [ ] Admin Paneli düğmesi yalnızca yöneticide görünüyor.
-
-## Mobil
-- [ ] Üst menü telefonda taşmıyor.
-- [ ] Başlık uzunsa üç nokta ile kısalıyor.
-- [ ] Düğmeler dar ekranda küçülüyor ama okunabilir.
-- [ ] Rozet düğmenin dışına taşmıyor.
-
-## RED listesi ekranı
-- [ ] Ekran açılıyor ve kayıtlar geliyor.
-- [ ] Yalnızca RED kayıtlar listeleniyor.
-- [ ] Açıklama sarı kutuda görünüyor.
-- [ ] Kanıt fotoğrafı görünüyor ve büyütülebiliyor.
-- [ ] Dönem, makine ve arama filtreleri çalışıyor.
-- [ ] Özet sayaçlar doğru.
+- [ ] RED listesi açılıyor.
+- [ ] Admin Paneli yalnızca yöneticide görünüyor.
 
 ## Operatör paneli
-- [ ] Makine listesi yükleniyor.
-- [ ] Durum renkleri doğru.
+- [ ] Makine listesi ve durum renkleri doğru.
 - [ ] QR okuma çalışıyor.
 - [ ] RED seçilince açıklama zorunlu oluyor.
 - [ ] 10 karakterden az yazıda kayıt engelleniyor.
-- [ ] UYGUN seçilince zorunluluk kalkıyor.
 - [ ] Kayıt sonrası renk güncelleniyor.
 
-## Admin paneli
-- [ ] Yönetici olmayan kullanıcı açamıyor.
-- [ ] Bakım tanımı kaydediliyor, düzenleniyor, siliniyor.
+## RED listesi
+- [ ] Yalnızca RED kayıtlar listeleniyor.
+- [ ] Açıklama ve fotoğraf görünüyor.
+- [ ] Filtreler çalışıyor.
 
-## Bağlantı
-- [ ] Bağlantıyı Test Et milisaniye gösteriyor.
-- [ ] İkinci açılışta liste anında geliyor.
+## Mobil
+- [ ] Ekranlar taşmıyor.
+- [ ] Uzun metinler alt satıra iniyor.

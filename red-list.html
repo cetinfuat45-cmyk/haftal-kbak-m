@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RED Verilen Bakımlar V5.4.19</title>
+<title>RED Verilen Bakımlar V5.4.21</title>
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="dns-prefetch" href="https://script.google.com">
 <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
@@ -13,33 +13,27 @@
 <style>
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
 @media(max-width:600px){.filters{grid-template-columns:1fr;gap:0}}
-
 .ozet{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 16px}
 .ozet-kutu{flex:1 1 130px;padding:12px 14px;border-radius:12px;background:#f6f9fc;border:1px solid #dce5ef}
 .ozet-kutu b{display:block;font-size:22px;color:#0f2d4d;line-height:1.2}
 .ozet-kutu small{color:#64748b;font-size:12px}
 .ozet-kutu.red{background:#fff1f1;border-color:#ffc9c9}
 .ozet-kutu.red b{color:#b11f2e}
-
 .red-card{display:block;width:100%;max-width:100%;background:#fff;border:1px solid #dce5ef;border-left:6px solid #FF9999;border-radius:12px;padding:14px 16px;margin:11px 0;text-align:left}
 .red-ust{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .red-rozet{display:grid;place-items:center;min-width:52px;height:28px;padding:0 10px;border-radius:8px;background:#FF9999;color:#7a1414;font-weight:900;font-size:12px;letter-spacing:.5px;flex:none}
 .red-baslik{flex:1 1 auto;min-width:0}
 .red-baslik b{display:block;font-size:16px;color:#0f2d4d;line-height:1.3;overflow-wrap:anywhere}
 .red-baslik small{display:block;color:#64748b;font-size:13px;overflow-wrap:anywhere}
-
 .red-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .etiket{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;background:#eef3f9;color:#334155;font-size:12px;font-weight:700}
 .etiket svg{width:13px;height:13px;fill:currentColor}
-
 .red-aciklama{margin-top:11px;padding:12px 14px;background:#fff7e6;border:1px solid #ffd591;border-radius:10px;font-size:14px;color:#5c3a00;line-height:1.5;overflow-wrap:anywhere}
 .red-aciklama .baslik{display:block;font-size:11px;font-weight:800;letter-spacing:.6px;color:#8a6100;margin-bottom:4px;text-transform:uppercase}
 .red-aciklama.bos{background:#f6f9fc;border-color:#dce5ef;color:#94a3b8;font-style:italic}
-
 .red-foto-alan{margin-top:11px}
 .red-foto{width:100%;max-width:240px;height:auto;border:1px solid #dce5ef;border-radius:10px;cursor:zoom-in;display:block}
 .red-foto-yok{font-size:12px;color:#94a3b8;font-style:italic}
-
 .foto-modal{position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;padding:16px;background:#050d16f2}
 .foto-modal-card{width:min(680px,100%);max-width:calc(100vw - 24px);max-height:92vh;display:flex;flex-direction:column;gap:10px}
 .foto-modal-card img{width:100%;max-height:74vh;object-fit:contain;border-radius:12px;background:#0b1626}
@@ -104,18 +98,16 @@
 <script src="net.js"></script>
 <script>
 'use strict';
-/* RED Verilen Bakımlar Ekranı V5.4.19 */
+/* RED Verilen Bakımlar Ekranı V5.4.21 */
 const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
 let tumKayitlar = [], makineAdlari = {};
 
 function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
 function guard(){
   const raw = sessionStorage.getItem(SESSION);
   if(!raw){ location.replace('index.html'); return false; }
   return true;
 }
-
 function yukleme(p, t){
   $('loader').classList.remove('hide');
   $('bar').style.width = p + '%';
@@ -125,14 +117,11 @@ function yukleme(p, t){
 
 /* ---------- Hafta yardımcıları ---------- */
 function haftaAnahtari(tarih){ return CMMS.weekKey(tarih); }
-
 function gecenHafta(){
   const d = new Date();
   d.setDate(d.getDate() - 7);
   return haftaAnahtari(d);
 }
-
-/* Tarih metnini Date nesnesine çevirir */
 function tarihCevir(v){
   if(v instanceof Date) return v;
   const raw = String(v||'').trim();
@@ -141,8 +130,6 @@ function tarihCevir(v){
   if(m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
   return new Date(raw);
 }
-
-/* WeekKey tarih biçimindeyse hafta biçimine çevirir */
 function haftaNormalle(weekKey, createdAt){
   const raw = String(weekKey||'').trim();
   if(/^\d{4}-W\d{2}$/i.test(raw)) return raw.toUpperCase();
@@ -154,7 +141,6 @@ function haftaNormalle(weekKey, createdAt){
   if(!isNaN(c.getTime())) return haftaAnahtari(c);
   return '';
 }
-
 function tarihYaz(v){
   const d = tarihCevir(v);
   if(isNaN(d.getTime())) return String(v||'-');
@@ -183,7 +169,6 @@ async function yukle(force){
     const r = rRes.value;
     if(!r || !r.success) throw Error((r && r.message) || 'Kayıtlar alınamadı.');
 
-    /* Yalnızca RED sonucu olan kayıtlar */
     tumKayitlar = (r.records || [])
       .filter(x => String(x.result||'').toLocaleUpperCase('tr').indexOf('RED') > -1)
       .map(x => ({
@@ -221,7 +206,6 @@ function filtrele(){
   const donem = $('haftaSec').value;
   const makine = $('makineSec').value;
   const q = $('ara').value.trim().toLocaleLowerCase('tr');
-
   const buH = haftaAnahtari(new Date());
   const gecH = gecenHafta();
 
@@ -239,7 +223,6 @@ function filtrele(){
 
 function ciz(){
   const liste = filtrele();
-
   $('sayiRed').textContent = liste.length;
   $('sayiMakine').textContent = new Set(liste.map(x => x.machineName)).size;
   $('sayiFoto').textContent = liste.filter(x => x.foto).length;

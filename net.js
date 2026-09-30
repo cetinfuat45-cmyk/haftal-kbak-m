@@ -1,10 +1,10 @@
 'use strict';
 /* =====================================================================
    Haftalık Bakım CMMS - Ortak Bağlantı Katmanı
-   Sürüm: V5.4.19
+   Sürüm: V5.4.21
    ===================================================================== */
 const CMMS = (function () {
-  const VERSION = 'V5.4.19';
+  const VERSION = 'V5.4.21';
   const API_URL = 'https://script.google.com/macros/s/AKfycbwjECihD-JQg6ITpewj4ga3HzMraB4sUNhrCf40l6Fjlf2EOhIY9oMknFHAnG_XTCPP/exec';
   const SESSION = 'haftalikBakimV544User';
   const TIMEOUT_MS = 12000, RETRY_COUNT = 1;

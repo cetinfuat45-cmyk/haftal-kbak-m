@@ -1,5 +1,8 @@
 'use strict';
-/* Haftalık Bakım CMMS - Giriş Ekranı - V5.4.19 */
+/* Haftalık Bakım CMMS - Eski giriş mantığı - V5.4.21
+   NOT: index.html bu dosyayı artık çağırmaz.
+   Giriş mantığı index.html içine gömülmüştür.
+   Dosya geriye dönük uyumluluk için pakette bırakılmıştır. */
 const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
 
 function loading(p, t, n = '') {
@@ -18,7 +21,6 @@ function showHome(user) {
   $('login').classList.add('hide');
   $('home').classList.remove('hide');
   $('welcome').textContent = 'Hoş geldiniz, ' + userName;
-  $('logout').classList.remove('hide');
   $('adminBtn').classList.toggle('hide', !admin);
 }
 
@@ -48,25 +50,5 @@ async function login() {
 
 $('loginBtn').onclick = login;
 $('password').onkeydown = e => { if (e.key === 'Enter') login(); };
-$('testBtn').onclick = async () => {
-  const t0 = performance.now();
-  try {
-    const r = await CMMS.call('health', {}, { retries: 0 });
-    $('debug').textContent = JSON.stringify(r, null, 2);
-    $('msg').textContent = 'Bağlantı başarılı: ' + r.version + ' (' + Math.round(performance.now() - t0) + ' ms)';
-  } catch (e) { $('msg').textContent = e.message; }
-};
 $('opBtn').onclick = () => location.href = 'weekly-maintenance.html';
-$('redBtn').onclick = () => location.href = 'red-list.html';
 $('adminBtn').onclick = () => location.href = 'admin-maintenance.html';
-$('logout').onclick = () => { sessionStorage.removeItem(SESSION); CMMS.cacheClear(); location.href = 'index.html'; };
-
-function showHomeFromSession() {
-  const raw = sessionStorage.getItem(SESSION);
-  if (!raw) return;
-  const params = new URLSearchParams(location.search);
-  if (params.get('screen') !== 'home') return;
-  try { showHome(JSON.parse(raw)); }
-  catch (error) { sessionStorage.removeItem(SESSION); }
-}
-showHomeFromSession();
