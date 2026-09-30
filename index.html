@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Haftalık Bakım CMMS V5.4.21</title>
+  <title>Haftalık Bakım CMMS V5.4.38</title>
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="dns-prefetch" href="https://script.google.com">
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
@@ -13,6 +13,7 @@
   <link rel="preload" href="AKGLOG.png" as="image">
   <link rel="prefetch" href="weekly-maintenance.html">
   <link rel="prefetch" href="red-list.html">
+  <link rel="prefetch" href="rapor.html">
   <style>
   /* ===== Üst menü RED düğmesi ===== */
   .ust-menu{display:flex;align-items:center;gap:8px;flex:0 0 auto}
@@ -24,6 +25,10 @@
   .ust-btn.red-button{background:#FF9999;border-color:#ffffff55}
   .ust-btn.red-button svg{fill:#7a1414}
   .ust-btn.red-button:hover{background:#ff8080}
+  /* V5.4.38 Rapor düğmesi */
+  .ust-btn.rapor-button{background:#99FF99;border-color:#ffffff55}
+  .ust-btn.rapor-button svg{fill:#0d5c2c}
+  .ust-btn.rapor-button:hover{background:#7ef07e}
   .ust-btn.exit-button{border-color:#ffb0b0aa}
   .ust-btn.exit-button:hover{background:#b11f2e}
   .red-badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;
@@ -41,13 +46,15 @@
   </style>
 </head>
 <body>
-
 <header class="op-header">
   <div class="ust-baslik">
     <img src="AKGLOG.png" alt="AKG">
     <strong>Haftalık Bakım CMMS</strong>
   </div>
   <nav class="ust-menu hide" id="headerMenu">
+    <button id="raporBtn" class="ust-btn rapor-button" type="button" title="Raporlar" aria-label="Raporlar">
+      <svg viewBox="0 0 24 24"><path d="M3 3h2v16h16v2H3zm4 10h3v5H7zm5-5h3v10h-3zm5-4h3v14h-3z"/></svg>
+    </button>
     <button id="redBtn" class="ust-btn red-button" type="button" title="RED Verilen Bakımlar" aria-label="RED Verilen Bakımlar">
       <svg viewBox="0 0 24 24"><path d="M12 2 1 21h22zm0 5 7.5 12.9h-15zM11 10h2v5h-2zm0 6.5h2v2h-2z"/></svg>
       <span id="redBadge" class="red-badge"></span>
@@ -57,7 +64,6 @@
     </button>
   </nav>
 </header>
-
 <main>
 <section id="login" class="card">
   <img class="logo" src="AKGLOG.png" alt="AKG">
@@ -69,35 +75,28 @@
   <div id="msg"></div>
   <pre id="debug"></pre>
 </section>
-
 <section id="home" class="card hide">
   <h2 id="welcome"></h2>
-  <p class="muted">RED verilen bakımlara üst menüdeki kırmızı uyarı düğmesinden ulaşabilirsiniz.</p>
+  <p class="muted">Üst menüde: yeşil grafik simgesi Raporlar, kırmızı uyarı simgesi RED Verilen Bakımlar.</p>
   <button id="opBtn">Operatör Bakım Paneli</button>
   <button id="adminBtn" class="secondary hide">Admin Paneli</button>
 </section>
 </main>
-
 <div id="loader" class="overlay hide"><div class="modal"><img src="AKGLOG.png" alt="Yükleniyor"><h2 id="loadTitle">Sistem yükleniyor</h2><p id="loadText">Hazırlanıyor...</p><div class="track"><div id="bar"></div></div><b id="percent">0%</b></div></div>
-
 <script src="net.js"></script>
 <script>
 'use strict';
 /* =====================================================================
    Haftalık Bakım CMMS - Giriş ve Ana Menü
-   Sürüm: V5.4.21
-
+   Sürüm: V5.4.38
+   V5.4.38: Üst menüye Raporlar ikonu eklendi (herkes görür).
    RED Verilen Bakımlar düğmesi üst menüdedir.
    Düğmenin üzerinde bu haftaki RED sayısı rozet olarak gösterilir.
-
    Not: Bu sayfa app.js dosyasını çağırmaz.
    ===================================================================== */
-
 const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
 const ROZET_KEY = 'cmmsRedSayisi_V5421';
-
 CMMS.warmUp();
-
 function loading(p, t, n = '') {
   $('loader').classList.remove('hide');
   $('bar').style.width = p + '%';
@@ -105,7 +104,6 @@ function loading(p, t, n = '') {
   $('loadText').textContent = t;
   $('loadTitle').textContent = (n ? n + ' için ' : '') + 'sistem yükleniyor';
 }
-
 function haftaAnahtari(tarih) {
   if (CMMS.weekKey) return CMMS.weekKey(tarih);
   const d = new Date(tarih || new Date());
@@ -115,7 +113,6 @@ function haftaAnahtari(tarih) {
   const w = Math.ceil((((d - y0) / 86400000) + 1) / 7);
   return d.getFullYear() + '-W' + String(w).padStart(2, '0');
 }
-
 /* ---------- RED rozeti ---------- */
 function rozetOku() {
   try {
@@ -141,7 +138,6 @@ function rozetGoster(sayi) {
     $('redBtn').title = 'RED Verilen Bakımlar';
   }
 }
-
 function tarihCevir(v) {
   if (v instanceof Date) return v;
   const raw = String(v || '').trim();
@@ -150,7 +146,6 @@ function tarihCevir(v) {
   if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
   return new Date(raw);
 }
-
 function haftaNormalle(weekKey, createdAt) {
   const raw = String(weekKey || '').trim();
   if (/^\d{4}-W\d{2}$/i.test(raw)) return raw.toUpperCase();
@@ -162,7 +157,6 @@ function haftaNormalle(weekKey, createdAt) {
   if (!isNaN(c.getTime())) return haftaAnahtari(c);
   return '';
 }
-
 function rozetTazele() {
   CMMS.call('listMaintenanceRecords', {}, { retries: 0, timeout: 20000 })
     .then(function (r) {
@@ -177,7 +171,6 @@ function rozetTazele() {
     })
     .catch(function () { /* rozet isteğe bağlıdır */ });
 }
-
 function showHome(user) {
   const userName = user.operator || user.name || user.fullName || 'Kullanıcı';
   const admin = String(user.role || '').toLocaleLowerCase('tr').includes('admin');
@@ -191,7 +184,6 @@ function showHome(user) {
   if (onbellek !== null) rozetGoster(onbellek);
   rozetTazele();
 }
-
 async function login() {
   const password = $('password').value.trim();
   if (!password) return $('msg').textContent = 'Şifre girin.';
@@ -219,7 +211,6 @@ async function login() {
     $('loginBtn').disabled = false;
   }
 }
-
 $('loginBtn').onclick = login;
 $('password').onkeydown = e => { if (e.key === 'Enter') login(); };
 $('testBtn').onclick = async () => {
@@ -234,13 +225,13 @@ $('testBtn').onclick = async () => {
 $('opBtn').onclick = () => location.href = 'weekly-maintenance.html';
 $('adminBtn').onclick = () => location.href = 'admin-maintenance.html';
 $('redBtn').onclick = () => location.href = 'red-list.html';
+$('raporBtn').onclick = () => location.href = 'rapor.html';
 $('exitBtn').onclick = () => {
   if (!confirm('Sistemden çıkmak istiyor musunuz?')) return;
   sessionStorage.removeItem(SESSION);
   CMMS.cacheClear();
   location.href = 'index.html';
 };
-
 (function showHomeFromSession() {
   const raw = sessionStorage.getItem(SESSION);
   if (!raw) return;

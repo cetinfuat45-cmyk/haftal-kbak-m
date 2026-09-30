@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RED Verilen Bakımlar V5.4.21</title>
+<title>RED Verilen Bakımlar V5.4.36</title>
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="dns-prefetch" href="https://script.google.com">
 <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
@@ -39,6 +39,9 @@
 .foto-modal-card img{width:100%;max-height:74vh;object-fit:contain;border-radius:12px;background:#0b1626}
 .foto-modal-card p{color:#cbd8e6;font-size:13px;margin:0;text-align:center;overflow-wrap:anywhere}
 .foto-modal-card button{margin:0}
+/* V5.4.36 Giderildi düğmesi */
+.gider-btn{margin:12px 0 0 !important;background:#167a42 !important;font-weight:900}
+.gider-btn:hover{background:#0f6636 !important}
 </style>
 </head>
 <body>
@@ -98,7 +101,8 @@
 <script src="net.js"></script>
 <script>
 'use strict';
-/* RED Verilen Bakımlar Ekranı V5.4.21 */
+/* RED Verilen Bakımlar Ekranı V5.4.36
+   V5.4.36: "Giderildi" düğmesi. Basınca E-Tabloda G sütunu RED -> UYGUN olur (Code.gs: redtouygun). */
 const SESSION = CMMS.SESSION, $ = id => document.getElementById(id);
 let tumKayitlar = [], makineAdlari = {};
 
@@ -256,9 +260,11 @@ function ciz(){
       </div>
       ${aciklama}
       ${foto}
+      <button class="gider-btn" type="button" data-id="${esc(x.recordId)}">✔ Giderildi</button>
     </article>`;
   }).join('');
 
+  document.querySelectorAll('.gider-btn').forEach(b => b.onclick = () => giderildi(b));
   document.querySelectorAll('.red-foto').forEach(img => {
     img.onclick = () => {
       $('fotoBuyuk').src = img.dataset.src;
@@ -266,6 +272,27 @@ function ciz(){
       $('fotoModal').classList.remove('hide');
     };
   });
+}
+
+/* ---------- V5.4.36 Giderildi: G sütunu RED -> UYGUN ---------- */
+async function giderildi(btn){
+  const id = btn.dataset.id;
+  const x = tumKayitlar.find(k => k.recordId === id);
+  if(!confirm((x ? x.machineName + '\n' : '') + id + '\n\nArıza giderildi mi? Kayıt RED yerine UYGUN olarak işaretlenecek.')) return;
+  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+  try{
+    const r = await CMMS.call('redToUygun', { recordId: id }, { retries: 0, timeout: 20000 });
+    if(!r || !r.success) throw new Error((r && r.message) || 'İşlem başarısız.');
+    tumKayitlar = tumKayitlar.filter(k => k.recordId !== id);
+    CMMS.cacheClear();
+    makineSecDoldur();
+    ciz();
+    $('msg').textContent = '✔ ' + id + ' UYGUN olarak işaretlendi.';
+    $('msg').className = 'success';
+  }catch(e){
+    btn.disabled = false; btn.textContent = '✔ Giderildi';
+    alert('Kaydedilemedi: ' + e.message);
+  }
 }
 
 /* ---------- Olaylar ---------- */
